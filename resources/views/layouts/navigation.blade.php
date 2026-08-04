@@ -12,9 +12,29 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
+                        Dashboard
                     </x-nav-link>
+
+                    @if(auth()->user()->role->name === 'Admin')
+
+                        <x-nav-link href="#">
+                            Products
+                        </x-nav-link>
+
+                        <x-nav-link href="#">
+                            Categories
+                        </x-nav-link>
+
+                    @elseif(auth()->user()->role->name === 'Kasir')
+
+                        <x-nav-link href="#">
+                            Transaksi
+                        </x-nav-link>
+
+                    @endif
+
                 </div>
             </div>
 
@@ -35,17 +55,16 @@
 
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
+                            Profile
                         </x-dropdown-link>
 
-                        <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
 
                             <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Log Out') }}
+                                onclick="event.preventDefault();
+                                this.closest('form').submit();">
+                                Log Out
                             </x-dropdown-link>
                         </form>
                     </x-slot>
@@ -66,10 +85,31 @@
 
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+
         <div class="pt-2 pb-3 space-y-1">
+
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
+                Dashboard
             </x-responsive-nav-link>
+
+            @if(auth()->user()->role->name === 'Admin')
+
+                <x-responsive-nav-link href="#">
+                    Products
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link href="#">
+                    Categories
+                </x-responsive-nav-link>
+
+            @elseif(auth()->user()->role->name === 'Kasir')
+
+                <x-responsive-nav-link href="#">
+                    Transaksi
+                </x-responsive-nav-link>
+
+            @endif
+
         </div>
 
         <!-- Responsive Settings Options -->
@@ -81,20 +121,20 @@
 
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
+                    Profile
                 </x-responsive-nav-link>
 
-                <!-- Authentication -->
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
 
                     <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
+                        onclick="event.preventDefault();
+                        this.closest('form').submit();">
+                        Log Out
                     </x-responsive-nav-link>
                 </form>
             </div>
         </div>
+
     </div>
 </nav>
