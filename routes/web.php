@@ -1,6 +1,11 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -9,18 +14,26 @@ Route::get('/', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Route yang bisa diakses semua user yang sudah login
+| Route yang bisa diakses SEMUA User Terautentikasi (Admin & Kasir)
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
 
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Route Laporan disini agar Kasir dan Admin bisa akses
+    Route::get('/reports', [ReportController::class, 'index'])
+        ->name('reports.index');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
 
 });
 
@@ -35,9 +48,20 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         return 'Halaman Admin';
     })->name('admin');
 
-    // Nanti di Modul 4 pindahkan ke sini:
-    // Route::resource('products', ProductController::class);
-    // Route::resource('categories', CategoryController::class);
+    Route::resource('products', ProductController::class);
+
+    Route::resource('categories', CategoryController::class);
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Route khusus Kasir
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:Kasir'])->group(function () {
+
+    Route::resource('transactions', TransactionController::class);
 
 });
 

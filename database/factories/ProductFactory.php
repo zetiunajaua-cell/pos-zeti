@@ -25,8 +25,17 @@ class ProductFactory extends Factory
      */
     public function definition(): array
     {
+        $category = Category::inRandomOrder()->first();
+
+        if (!$category) {
+            $category = Category::create([
+                'name' => 'Makanan',
+                'slug' => 'makanan',
+            ]);
+        }
+
         return [
-            'category_id' => Category::inRandomOrder()->first()->id,
+            'category_id' => $category->id,
             'sku' => strtoupper(fake()->bothify('SKU###??')),
             'name' => fake()->words(2, true),
             'purchase_price' => fake()->numberBetween(10000, 50000),

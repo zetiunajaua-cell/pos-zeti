@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -15,7 +16,7 @@ class UserFactory extends Factory
     /**
      * The current password being used by the factory.
      */
-    protected static ?string $password;
+    protected static ?string $password = null;
 
     /**
      * Define the model's default state.
@@ -25,12 +26,34 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'role_id' => Role::where('name', 'Kasir')->first()?->id
+                ?? Role::create(['name' => 'Kasir'])->id,
+
             'name' => fake()->name(),
+
             'email' => fake()->unique()->safeEmail(),
+
             'email_verified_at' => now(),
+
             'password' => static::$password ??= Hash::make('password'),
+
             'remember_token' => Str::random(10),
+
+            'is_active' => true,
         ];
+    }
+
+    /**
+     * Membuat user dengan role Kasir.
+     */
+    public function kasir(): static
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'role_id' => Role::where('name', 'Kasir')->first()?->id
+                    ?? Role::create(['name' => 'Kasir'])->id,
+            ];
+        });
     }
 
     /**
