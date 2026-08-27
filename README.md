@@ -180,160 +180,36 @@ Laravel memiliki struktur folder yang terorganisir sehingga setiap folder memili
 
 # Modul 7 - Testing, Optimasi & Persiapan Deployment
 
-## Automated Testing
+Project ini menggunakan automated testing untuk memastikan fitur berjalan sesuai kebutuhan.
 
-Automated testing digunakan untuk memastikan fitur aplikasi tetap berjalan dengan benar setelah terjadi perubahan kode.
+## Hasil Automated Test
 
-Pada project POS Laravel ini digunakan feature test untuk menguji alur transaksi kasir dari request sampai perubahan stok produk.
-
-### Test Transaksi Berhasil
-
-Test ini memastikan stok produk berkurang sesuai jumlah barang yang dibeli.
-
-Skenario:
-
-* Stok awal produk = 10
-* Produk dibeli = 3
-* Stok setelah transaksi = 7
-
-Hasil pengujian:
-
-```text
-PASS  Tests\Feature\TransactionTest
-✓ it mengurangi stok produk setelah transaksi berhasil
-
-Tests:    1 passed (2 assertions)
-```
-
-### Test Transaksi Gagal
-
-Test ini memastikan transaksi ditolak ketika jumlah produk yang dibeli melebihi stok yang tersedia.
-
-Skenario:
-
-* Stok awal produk = 2
-* Produk yang dibeli = 5
-* Transaksi ditolak karena stok tidak mencukupi.
-* Stok produk tetap 2.
-
-Hasil pengujian:
-
-```text
-PASS  Tests\Feature\TransactionTest
-✓ it menolak transaksi jika stok produk tidak mencukupi
-
-Tests:    1 passed (2 assertions)
-```
-
-### Hasil Seluruh Automated Test
-
-Seluruh test aplikasi dijalankan menggunakan:
-
-```bash
-php artisan test
-```
-
-Hasil pengujian:
-
-```text
-Tests:    25 passed (61 assertions)
-Duration: 9.79s
-```
-
-Seluruh automated test berhasil dijalankan tanpa error atau test yang gagal.
+* Test transaksi berhasil mengurangi stok: PASS
+* Test transaksi ditolak jika stok tidak mencukupi: PASS
+* Seluruh automated test: 27 passed (67 assertions)
 
 ---
 
-## Optimasi Laravel
+## Checklist Sebelum Deployment
 
-Beberapa perintah optimasi Laravel telah dijalankan untuk mempersiapkan aplikasi sebelum deployment.
-
-### Configuration Cache
-
-```bash
-php artisan config:cache
-```
-
-Perintah ini digunakan untuk melakukan cache terhadap konfigurasi Laravel.
-
-### Route Cache
-
-```bash
-php artisan route:cache
-```
-
-Perintah ini digunakan untuk melakukan cache terhadap route aplikasi.
-
-### View Cache
-
-```bash
-php artisan view:cache
-```
-
-Perintah ini digunakan untuk melakukan cache terhadap template Blade.
-
-### Storage Link
-
-```bash
-php artisan storage:link
-```
-
-Perintah ini digunakan agar file yang berada pada storage dapat diakses melalui folder public.
+| No | Checklist | Status | Catatan |
+| -- | --------- | ------ | ------- |
+| 1 | APP_ENV=production dan APP_DEBUG=false pada file `.env` server. | ✅ | Sudah diuji pada environment lokal dengan `APP_ENV=production` dan `APP_DEBUG=false`. Saat mengakses URL yang tidak tersedia, aplikasi menampilkan `404 Not Found` tanpa stack trace teknis. |
+| 2 | APP_KEY sudah di-generate. | ✅ | `APP_KEY` sudah tersedia dan berhasil digunakan pada environment project. |
+| 3 | Menjalankan `php artisan config:cache`. | ✅ | Berhasil dijalankan dengan pesan `Configuration cached successfully.` |
+| 4 | Menjalankan `php artisan route:cache`. | ✅ | Berhasil dijalankan dengan pesan `Routes cached successfully.` |
+| 5 | Menjalankan `php artisan view:cache`. | ✅ | Berhasil dijalankan dengan pesan `Blade templates cached successfully.` |
+| 6 | Folder storage dan bootstrap/cache memiliki izin tulis yang benar. | ✅ | Kedua folder sudah diverifikasi dan dapat ditulis pada environment. |
+| 7 | Password akun default sudah diganti. | ✅ | Password akun Administrator dan Kasir sudah berhasil diganti. |
+| 8 | Backup database sudah dipersiapkan. | ✅ | Backup database manual sudah dipersiapkan sebelum aplikasi digunakan secara live. |
+| 9 | HTTPS aktif jika aplikasi di-deploy ke domain publik. | ✅ | Sudah diterapkan menggunakan HTTPS pada domain publik `https://pos-zeti.pkl-banjar.my.id`. |
 
 ---
 
-# Checklist Sebelum Deployment
+## Demo Production
 
-| No | Checklist                     | Status | Catatan                                                                             |
-| -- | ----------------------------- | ------ | ----------------------------------------------------------------------------------- |
-| 1  | APP_ENV=production            | ⬜      | Belum diterapkan karena aplikasi masih digunakan pada environment development lokal |
-| 2  | APP_DEBUG=false               | ✅      | Berhasil didemokan. Halaman 404 tidak menampilkan stack trace atau informasi teknis |
-| 3  | APP_KEY khusus production     | ⬜      | Belum dibuat khusus untuk environment production                                    |
-| 4  | `php artisan config:cache`    | ✅      | Berhasil dijalankan                                                                 |
-| 5  | `php artisan route:cache`     | ✅      | Berhasil dijalankan                                                                 |
-| 6  | `php artisan view:cache`      | ✅      | Berhasil dijalankan                                                                 |
-| 7  | Permission storage            | ✅      | Storage link berhasil dibuat                                                        |
-| 8  | Password akun default diganti | ⬜      | Perlu dilakukan sebelum deployment production                                       |
-| 9  | Backup database               | ⬜      | Perlu disiapkan sebelum aplikasi digunakan secara resmi                             |
-| 10 | HTTPS/SSL aktif               | ⬜      | Diperlukan jika aplikasi menggunakan domain publik                                  |
-
-> Catatan: aplikasi masih dikembangkan pada environment lokal. Oleh karena itu, konfigurasi production seperti APP_ENV=production, APP_KEY production, backup database, dan HTTPS belum diterapkan pada komputer development.
-
----
-
-## Demo APP_DEBUG=false
-
-Pengujian dilakukan dengan menjalankan aplikasi menggunakan:
+Aplikasi telah diuji menggunakan konfigurasi:
 
 ```env
+APP_ENV=production
 APP_DEBUG=false
-```
-
-Kemudian diakses URL yang tidak tersedia untuk memicu halaman error 404.
-
-Hasil pengujian:
-
-```text
-404
-Not Found
-```
-
-Aplikasi tidak menampilkan stack trace, path file, atau informasi teknis kepada pengguna.
-
-**Hasil: Berhasil.**
-
----
-
-# Kesimpulan Modul 7
-
-Pada Modul 7 telah dilakukan automated testing menggunakan feature test dengan Pest untuk menguji alur transaksi pada aplikasi POS Laravel.
-
-Pengujian mencakup dua skenario, yaitu transaksi berhasil yang mengurangi stok produk dan transaksi gagal ketika stok produk tidak mencukupi. Kedua test berhasil dijalankan dengan hasil **2 passed (4 assertions)**.
-
-Seluruh automated test aplikasi juga berhasil dijalankan dengan hasil **25 passed (61 assertions)**.
-
-Selain testing, dilakukan optimasi Laravel menggunakan configuration cache, route cache, dan view cache. Storage link juga berhasil dibuat.
-
-Checklist persiapan deployment telah dibuat dan diverifikasi berdasarkan kondisi aplikasi saat ini. Pengujian `APP_DEBUG=false` juga berhasil dilakukan dengan hasil halaman 404 yang tidak menampilkan stack trace atau informasi teknis kepada pengguna.
-
-Dengan demikian, fitur automated testing, optimasi, dan persiapan deployment pada Modul 7 telah selesai dilakukan.
