@@ -1,3 +1,75 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* SweetAlert2 Elegant Theme Customization */
+.swal2-container {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+    z-index: 999999 !important;
+}
+
+.swal2-popup {
+    border-radius: 1.5rem !important; /* rounded-3xl */
+    font-family: inherit !important;
+    padding: 1.75rem 1.5rem !important;
+    border: 1px solid rgba(226, 232, 240, 0.9) !important;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.18) !important;
+}
+
+.swal2-title {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+    color: #0f172a !important;
+}
+
+.swal2-html-container {
+    font-size: 0.825rem !important;
+    font-weight: 500 !important;
+    color: #64748b !important;
+    margin-top: 0.5rem !important;
+}
+
+.swal2-actions {
+    margin-top: 1.5rem !important;
+    gap: 0.75rem !important;
+}
+
+.swal2-confirm, .swal2-cancel {
+    border-radius: 0.75rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    padding: 0.65rem 1.25rem !important;
+    transition: all 0.15s ease-in-out !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Dark Mode SweetAlert2 overrides */
+.dark .swal2-popup {
+    background-color: #0f172a !important; /* slate-900 */
+    border: 1px solid rgba(51, 65, 85, 0.7) !important; /* slate-700 */
+    color: #f8fafc !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
+}
+
+.dark .swal2-title {
+    color: #f8fafc !important;
+}
+
+.dark .swal2-html-container {
+    color: #94a3b8 !important; /* slate-400 */
+}
+
+/* SweetAlert2 Toast styling */
+.swal2-toast {
+    border-radius: 1rem !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+    padding: 0.75rem 1rem !important;
+}
+
+.dark .swal2-toast {
+    background-color: #1e293b !important; /* slate-800 */
+    border: 1px solid rgba(51, 65, 85, 0.8) !important;
+    color: #f8fafc !important;
+}

@@ -14,9 +14,11 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::withCount('products')->latest()->get();
+        $totalCategories = Category::count();
+        $totalProductsConnected = Category::withCount('products')->get()->sum('products_count');
+        $categories = Category::withCount('products')->latest()->paginate(10)->withQueryString();
 
-        return view('categories.index', compact('categories'));
+        return view('categories.index', compact('categories', 'totalCategories', 'totalProductsConnected'));
     }
 
     /**

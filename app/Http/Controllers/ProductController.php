@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
+use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -15,8 +17,12 @@ class ProductController extends Controller
     public function index()
     {
         $search = request('search');
+        $categoryId = request('category_id');
 
-        $products = Product::with('category')
+        $products = Product::with(['category', 'variants'])
+            ->when($categoryId, function ($query) use ($categoryId) {
+                $query->where('category_id', $categoryId);
+            })
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -27,20 +33,26 @@ class ProductController extends Controller
                 });
             })
             ->latest()
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
+        $categories    = Category::orderBy('name')->get();
         $totalProduct  = Product::count();
         $totalActive   = Product::where('is_active', true)->count();
         $totalCategory = Category::count();
         $totalStock    = Product::sum('stock');
+        $totalLowStock = Product::where('is_active', true)->whereColumn('stock', '<=', 'min_stock')->count();
 
         return view('products.index', compact(
             'products',
             'search',
+            'categoryId',
+            'categories',
             'totalProduct',
             'totalActive',
             'totalCategory',
-            'totalStock'
+            'totalStock',
+            'totalLowStock'
         ));
     }
 
@@ -59,7 +71,34 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request)
     {
-        Product::create($request->validated());
+        $data = $request->safe()->except(['variants', 'image']);
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        $data['min_stock'] = $request->input('min_stock', 5);
+
+        $product = Product::create($data);
+
+        if ($request->has('variants')) {
+            foreach ($request->variants as $variantData) {
+                if (!empty(trim($variantData['name'] ?? ''))) {
+                    $product->variants()->create([
+                        'name' => trim($variantData['name']),
+                        'additional_price' => $variantData['additional_price'] ?? 0,
+                        'is_active' => true,
+                    ]);
+                }
+            }
+        }
+
+        ActivityLog::record(
+            'CREATE_PRODUCT',
+            "Menambahkan produk baru '{$product->name}' (SKU: {$product->sku})",
+            $product,
+            ['price' => $product->price, 'stock' => $product->stock]
+        );
 
         return redirect()
             ->route('products.index')
@@ -79,6 +118,7 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
+        $product->load('variants');
         $categories = Category::all();
 
         return view('products.edit', compact('product', 'categories'));
@@ -89,7 +129,38 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product)
     {
-        $product->update($request->validated());
+        $data = $request->safe()->except(['variants', 'image']);
+
+        if ($request->hasFile('image')) {
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        $data['min_stock'] = $request->input('min_stock', 5);
+
+        $product->update($data);
+
+        $product->variants()->delete();
+        if ($request->has('variants')) {
+            foreach ($request->variants as $variantData) {
+                if (!empty(trim($variantData['name'] ?? ''))) {
+                    $product->variants()->create([
+                        'name' => trim($variantData['name']),
+                        'additional_price' => $variantData['additional_price'] ?? 0,
+                        'is_active' => true,
+                    ]);
+                }
+            }
+        }
+
+        ActivityLog::record(
+            'UPDATE_PRODUCT',
+            "Memperbarui data produk '{$product->name}' (SKU: {$product->sku})",
+            $product,
+            ['price' => $product->price, 'stock' => $product->stock]
+        );
 
         return redirect()
             ->route('products.index')
@@ -101,7 +172,27 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
+        if ($product->transactionItems()->exists()) {
+            return redirect()
+                ->route('products.index')
+                ->with('error', 'Produk tidak dapat dihapus karena sudah memiliki riwayat transaksi.');
+        }
+
+        $prodName = $product->name;
+        $prodSku = $product->sku;
+
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
+        }
+
         $product->delete();
+
+        ActivityLog::record(
+            'DELETE_PRODUCT',
+            "Menghapus produk '{$prodName}' (SKU: {$prodSku})",
+            null,
+            ['sku' => $prodSku]
+        );
 
         return redirect()
             ->route('products.index')

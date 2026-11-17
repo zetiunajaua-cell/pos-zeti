@@ -13,8 +13,13 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             UserSeeder::class,
             CategorySeeder::class,
+            PaymentMethodSeeder::class,
+            SettingAndExpenseSeeder::class,
+            PromotionAndCustomerSeeder::class,
         ]);
 
-        Product::factory(20)->create();
+        if (Product::count() === 0) {
+            Product::factory(20)->create();
+        }
     }
 }

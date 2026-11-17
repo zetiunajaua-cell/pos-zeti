@@ -3,6 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\ActivityLog;
+use App\Models\Expense;
+use App\Models\Product;
+use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,8 +21,47 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user()->load('role');
+        $roleName = optional($user->role)->name ?? 'User';
+
+        $stats = [];
+        $recentTransactions = collect();
+        $recentActivities = collect();
+
+        if ($roleName === 'Kasir') {
+            $stats = [
+                'total_transactions' => Transaction::where('user_id', $user->id)->where('status', 'completed')->count(),
+                'total_sales' => (float) Transaction::where('user_id', $user->id)->where('status', 'completed')->sum('total_amount'),
+                'today_transactions' => Transaction::where('user_id', $user->id)->where('status', 'completed')->whereDate('created_at', today())->count(),
+                'today_sales' => (float) Transaction::where('user_id', $user->id)->where('status', 'completed')->whereDate('created_at', today())->sum('total_amount'),
+            ];
+
+            $recentTransactions = Transaction::with(['customer', 'paymentMethod'])
+                ->where('user_id', $user->id)
+                ->latest()
+                ->take(5)
+                ->get();
+        } else {
+            // Admin atau peran lainnya
+            $stats = [
+                'total_expenses' => Expense::where('user_id', $user->id)->count(),
+                'total_activities' => ActivityLog::where('user_id', $user->id)->count(),
+                'total_products' => Product::count(),
+                'total_users' => User::count(),
+            ];
+
+            $recentActivities = ActivityLog::where('user_id', $user->id)
+                ->latest()
+                ->take(5)
+                ->get();
+        }
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'roleName' => $roleName,
+            'stats' => $stats,
+            'recentTransactions' => $recentTransactions,
+            'recentActivities' => $recentActivities,
         ]);
     }
 
@@ -26,13 +70,21 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $user->fill($request->validated());
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
+
+        ActivityLog::record(
+            'UPDATE_PROFILE',
+            "Pengguna {$user->name} memperbarui informasi profil akun.",
+            $user,
+            ['name' => $user->name, 'email' => $user->email]
+        );
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -47,6 +99,12 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        ActivityLog::record(
+            'DELETE_ACCOUNT',
+            "Pengguna {$user->name} ({$user->email}) menghapus akun miliknya.",
+            null
+        );
 
         Auth::logout();
 

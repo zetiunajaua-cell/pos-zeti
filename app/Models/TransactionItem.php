@@ -13,9 +13,12 @@ class TransactionItem extends Model
     protected $fillable = [
         'transaction_id',
         'product_id',
+        'product_variant_id',
+        'variant_name',
         'price',
         'quantity',
         'subtotal',
+        'note',
     ];
 
     public function transaction(): BelongsTo
@@ -26,5 +29,10 @@ class TransactionItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 }

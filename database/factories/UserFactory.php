@@ -57,6 +57,19 @@ class UserFactory extends Factory
     }
 
     /**
+     * Membuat user dengan role Admin.
+     */
+    public function admin(): static
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'role_id' => Role::where('name', 'Admin')->first()?->id
+                    ?? Role::create(['name' => 'Admin'])->id,
+            ];
+        });
+    }
+
+    /**
      * Indicate that the model's email address should be unverified.
      */
     public function unverified(): static

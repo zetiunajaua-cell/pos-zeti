@@ -1,286 +1,339 @@
 <x-app-layout>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-    <div class="w-full px-8 py-8 flex justify-center">
-
-        <div class="w-full max-w-5xl">
-
-            {{-- KOTAK PERINGATAN MERAH DI ATAS --}}
-            @if ($errors->any())
-                <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 shadow-sm">
-                    <div class="flex items-center gap-2 text-xl font-black mb-2">
-                        ⚠️ Terjadi Kesalahan Validasi!
+        {{-- HEADER BANNER COMPACT --}}
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-md p-6 sm:p-8 text-white">
+            <div class="absolute right-[-40px] top-[-40px] h-48 w-48 rounded-full bg-white/10 blur-2xl"></div>
+            <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs font-semibold backdrop-blur-xs">
+                        <span>📦</span> Master Produk
                     </div>
-
-                    <ul class="list-disc list-inside text-base font-semibold space-y-1">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+                    <h1 class="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-white">
+                        Tambah Produk Baru
+                    </h1>
+                    <p class="mt-1 text-xs sm:text-sm text-indigo-100 font-medium">
+                        Daftarkan item barang baru ke dalam katalog dan sistem kasir.
+                    </p>
                 </div>
-            @endif
+                <a href="{{ route('products.index') }}"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-xs transition self-start sm:self-auto">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    <span>Kembali ke Katalog</span>
+                </a>
+            </div>
+        </div>
 
-            {{-- HEADER CARD --}}
-            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 shadow-xl mb-8 p-8 md:p-10 text-white">
+        {{-- ERROR ALERT --}}
+        @if ($errors->any())
+            <div class="rounded-2xl border border-rose-200 bg-rose-50/90 p-5 text-rose-800 text-xs font-semibold shadow-xs">
+                <div class="flex items-center gap-2 text-sm font-bold mb-2">
+                    <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Periksa Kembali Data Input:</span>
+                </div>
+                <ul class="list-disc list-inside space-y-1 text-rose-700">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
-                <div class="absolute right-[-40px] top-[-40px] h-48 w-48 rounded-full bg-white/10 blur-2xl"></div>
+        {{-- FORM CARD FULL WIDTH COMPACT --}}
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-8">
+            <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                @csrf
 
-                <div class="relative flex items-center justify-between">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
+                    {{-- SKU / BARCODE --}}
                     <div>
-
-                        <span class="inline-flex items-center rounded-full bg-white/20 px-4 py-1.5 text-xs font-semibold tracking-wide">
-                            📦 Product Management
-                        </span>
-
-                        <h1 class="mt-3 text-3xl md:text-5xl font-black">
-                            Tambah Produk
-                        </h1>
-
-                        <p class="mt-2 text-lg text-indigo-100 font-medium">
-                            Tambahkan produk baru ke dalam sistem toko.
-                        </p>
-
+                        <label for="sku" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Kode SKU / Barcode <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="text"
+                               name="sku"
+                               id="sku"
+                               value="{{ old('sku') }}"
+                               placeholder="Contoh: SKU-00123"
+                               required
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition {{ $errors->has('sku') ? 'border-rose-400 bg-rose-50/30' : '' }}">
+                        @error('sku')
+                            <p class="text-[11px] font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
-                    <div class="hidden sm:flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10 text-5xl">
-                        ➕
+                    {{-- NAMA PRODUK --}}
+                    <div class="lg:col-span-2">
+                        <label for="name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Nama Produk <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="text"
+                               name="name"
+                               id="name"
+                               value="{{ old('name') }}"
+                               placeholder="Contoh: Kopi Susu Aren 250ml"
+                               required
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition {{ $errors->has('name') ? 'border-rose-400 bg-rose-50/30' : '' }}">
+                        @error('name')
+                            <p class="text-[11px] font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- KATEGORI --}}
+                    <div>
+                        <label for="category_id" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Kategori Produk <span class="text-rose-500">*</span>
+                        </label>
+                        <select name="category_id"
+                                id="category_id"
+                                required
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition {{ $errors->has('category_id') ? 'border-rose-400 bg-rose-50/30' : '' }}">
+                            <option value="">-- Pilih Kategori --</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('category_id')
+                            <p class="text-[11px] font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- SATUAN --}}
+                    <div>
+                        <label for="unit" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Satuan Unit <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="text"
+                               name="unit"
+                               id="unit"
+                               value="{{ old('unit', 'pcs') }}"
+                               placeholder="pcs / botol / box"
+                               required
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition {{ $errors->has('unit') ? 'border-rose-400 bg-rose-50/30' : '' }}">
+                        @error('unit')
+                            <p class="text-[11px] font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- STOK AWAL --}}
+                    <div>
+                        <label for="stock" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Stok Awal <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="number"
+                               name="stock"
+                               id="stock"
+                               value="{{ old('stock', 0) }}"
+                               min="0"
+                               required
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition {{ $errors->has('stock') ? 'border-rose-400 bg-rose-50/30' : '' }}">
+                        @error('stock')
+                            <p class="text-[11px] font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- BATAS STOK MINIMUM (Task 24) --}}
+                    <div>
+                        <label for="min_stock" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Batas Stok Minimum <span class="text-amber-500">*</span>
+                        </label>
+                        <input type="number"
+                               name="min_stock"
+                               id="min_stock"
+                               value="{{ old('min_stock', 5) }}"
+                               min="0"
+                               required
+                               placeholder="5"
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-800 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition {{ $errors->has('min_stock') ? 'border-rose-400 bg-rose-50/30' : '' }}">
+                        <p class="text-[10px] text-slate-400 mt-1">Peringatan otomatis muncul bila stok mencapai angka ini.</p>
+                        @error('min_stock')
+                            <p class="text-[11px] font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- FOTO PRODUK (Task 23) --}}
+                    <div class="md:col-span-2 lg:col-span-3" x-data="{
+                        imagePreview: null,
+                        previewFile(event) {
+                            const file = event.target.files[0];
+                            if (file) {
+                                this.imagePreview = URL.createObjectURL(file);
+                            }
+                        }
+                    }">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Foto Produk (Opsional - Format JPG, PNG, WEBP, Maks. 2MB)
+                        </label>
+                        <div class="flex items-center gap-4 p-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 hover:bg-slate-50 transition">
+                            <div class="w-16 h-16 rounded-xl border border-slate-200 bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                                <template x-if="imagePreview">
+                                    <img :src="imagePreview" class="w-full h-full object-cover">
+                                </template>
+                                <template x-if="!imagePreview">
+                                    <svg class="w-7 h-7 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </template>
+                            </div>
+                            <div class="flex-1">
+                                <input type="file"
+                                       name="image"
+                                       id="image"
+                                       accept="image/png, image/jpeg, image/jpg, image/webp"
+                                       @change="previewFile($event)"
+                                       class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                                <p class="text-[10px] text-slate-400 mt-1">Unggah foto produk untuk memudahkan kasir mengenali produk saat transaksi POS.</p>
+                            </div>
+                        </div>
+                        @error('image')
+                            <p class="text-[11px] font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- HARGA BELI (MODAL) --}}
+                    <div>
+                        <label for="purchase_price" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Harga Beli (Modal) <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-xs font-bold text-slate-400">
+                                Rp
+                            </span>
+                            <input type="number"
+                                   name="purchase_price"
+                                   id="purchase_price"
+                                   value="{{ old('purchase_price') }}"
+                                   placeholder="0"
+                                   min="0"
+                                   step="100"
+                                   required
+                                   class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition {{ $errors->has('purchase_price') ? 'border-rose-400 bg-rose-50/30' : '' }}">
+                        </div>
+                        @error('purchase_price')
+                            <p class="text-[11px] font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- HARGA JUAL --}}
+                    <div>
+                        <label for="sell_price" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Harga Jual <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-xs font-bold text-slate-400">
+                                Rp
+                            </span>
+                            <input type="number"
+                                   name="sell_price"
+                                   id="sell_price"
+                                   value="{{ old('sell_price') }}"
+                                   placeholder="0"
+                                   min="0"
+                                   step="100"
+                                   required
+                                   class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition {{ $errors->has('sell_price') ? 'border-rose-400 bg-rose-50/30' : '' }}">
+                        </div>
+                        @error('sell_price')
+                            <p class="text-[11px] font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- STATUS AKTIF --}}
+                    <div class="flex items-center pt-6">
+                        <label class="inline-flex items-center cursor-pointer select-none">
+                            <input type="hidden" name="is_active" value="0">
+                            <input type="checkbox"
+                                   name="is_active"
+                                   value="1"
+                                   {{ old('is_active', '1') == '1' ? 'checked' : '' }}
+                                   class="w-4 h-4 rounded-md border-slate-300 text-blue-600 shadow-xs focus:ring-blue-500 transition cursor-pointer">
+                            <span class="ms-2.5 text-xs font-bold text-slate-700">
+                                Produk Aktif & Dapat Dijual di Kasir
+                            </span>
+                        </label>
                     </div>
 
                 </div>
 
-            </div>
-
-            {{-- FORM CARD --}}
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-
-                <form action="{{ route('products.store') }}" method="POST" novalidate class="p-8 md:p-12 space-y-8">
-
-                    @csrf
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-                        {{-- KODE SKU --}}
-                        <div class="space-y-3">
-
-                            <label for="sku" class="block text-base font-extrabold text-gray-800 uppercase tracking-wider">
-                                KODE SKU <span class="text-red-500">*</span>
-                            </label>
-
-                            <input
-                                type="text"
-                                name="sku"
-                                id="sku"
-                                value="{{ old('sku') }}"
-                                placeholder="Contoh: SKU98233"
-                                class="block w-full rounded-2xl border-2 px-5 py-4 text-lg font-semibold text-gray-800 placeholder-gray-400 focus:outline-none transition duration-150 {{ $errors->has('sku') ? 'border-red-500 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100' }}"
-                            >
-
-                            @error('sku')
-                                <p class="text-base font-bold text-red-600 mt-2 flex items-center gap-1.5">
-                                    🚨 {{ $message }}
-                                </p>
-                            @enderror
-
+                {{-- SECTION VARIAN PRODUK (Task 21) --}}
+                <div x-data="{
+                    variants: {{ json_encode(old('variants', [])) }} || [],
+                    addVariant() {
+                        this.variants.push({ name: '', additional_price: 0 });
+                    },
+                    removeVariant(index) {
+                        this.variants.splice(index, 1);
+                    }
+                }" class="pt-6 border-t border-slate-100 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Varian Produk (Opsional)</h3>
+                            <p class="text-[11px] text-slate-400">Tambahkan pilihan rasa, ukuran, atau jenis (contoh: Cokelat, Stroberi, Vanila, Matcha, Regular, Large).</p>
                         </div>
-
-                        {{-- NAMA PRODUK --}}
-                        <div class="space-y-3">
-
-                            <label for="name" class="block text-base font-extrabold text-gray-800 uppercase tracking-wider">
-                                NAMA PRODUK <span class="text-red-500">*</span>
-                            </label>
-
-                            <input
-                                type="text"
-                                name="name"
-                                id="name"
-                                value="{{ old('name') }}"
-                                placeholder="Contoh: Nescafe Ice Coffee"
-                                class="block w-full rounded-2xl border-2 px-5 py-4 text-lg font-semibold text-gray-800 placeholder-gray-400 focus:outline-none transition duration-150 {{ $errors->has('name') ? 'border-red-500 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100' }}"
-                            >
-
-                            @error('name')
-                                <p class="text-base font-bold text-red-600 mt-2 flex items-center gap-1.5">
-                                    🚨 {{ $message }}
-                                </p>
-                            @enderror
-
-                        </div>
-
-                        {{-- KATEGORI PRODUK --}}
-                        <div class="space-y-3">
-
-                            <label for="category_id" class="block text-base font-extrabold text-gray-800 uppercase tracking-wider">
-                                KATEGORI PRODUK <span class="text-red-500">*</span>
-                            </label>
-
-                            <select
-                                name="category_id"
-                                id="category_id"
-                                class="block w-full rounded-2xl border-2 px-5 py-4 text-lg font-semibold text-gray-800 focus:outline-none transition duration-150 {{ $errors->has('category_id') ? 'border-red-500 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100' }}"
-                            >
-
-                                <option value="">-- Pilih Kategori --</option>
-
-                                @foreach($categories as $category)
-                                    <option
-                                        value="{{ $category->id }}"
-                                        {{ old('category_id') == $category->id ? 'selected' : '' }}
-                                    >
-                                        {{ $category->name }}
-                                    </option>
-                                @endforeach
-
-                            </select>
-
-                            @error('category_id')
-                                <p class="text-base font-bold text-red-600 mt-2 flex items-center gap-1.5">
-                                    🚨 {{ $message }}
-                                </p>
-                            @enderror
-
-                        </div>
-
-                        {{-- SATUAN --}}
-                        <div class="space-y-3">
-
-                            <label for="unit" class="block text-base font-extrabold text-gray-800 uppercase tracking-wider">
-                                SATUAN <span class="text-red-500">*</span>
-                            </label>
-
-                            <input
-                                type="text"
-                                name="unit"
-                                id="unit"
-                                value="{{ old('unit', 'pcs') }}"
-                                placeholder="pcs / botol / porsi / pack"
-                                class="block w-full rounded-2xl border-2 px-5 py-4 text-lg font-semibold text-gray-800 placeholder-gray-400 focus:outline-none transition duration-150 {{ $errors->has('unit') ? 'border-red-500 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100' }}"
-                            >
-
-                            @error('unit')
-                                <p class="text-base font-bold text-red-600 mt-2 flex items-center gap-1.5">
-                                    🚨 {{ $message }}
-                                </p>
-                            @enderror
-
-                        </div>
-
-                        {{-- HARGA BELI --}}
-                        <div class="space-y-3">
-
-                            <label for="purchase_price" class="block text-base font-extrabold text-gray-800 uppercase tracking-wider">
-                                HARGA BELI (MODAL) <span class="text-red-500">*</span>
-                            </label>
-
-                            <div class="relative rounded-2xl shadow-sm">
-
-                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5 text-lg font-black text-gray-400">
-                                    Rp
-                                </div>
-
-                                <input
-                                    type="number"
-                                    name="purchase_price"
-                                    id="purchase_price"
-                                    value="{{ old('purchase_price') }}"
-                                    placeholder="0"
-                                    class="block w-full rounded-2xl border-2 pl-14 pr-5 py-4 text-lg font-semibold text-gray-800 placeholder-gray-400 focus:outline-none transition duration-150 {{ $errors->has('purchase_price') ? 'border-red-500 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100' }}"
-                                >
-
-                            </div>
-
-                            @error('purchase_price')
-                                <p class="text-base font-bold text-red-600 mt-2 flex items-center gap-1.5">
-                                    🚨 {{ $message }}
-                                </p>
-                            @enderror
-
-                        </div>
-
-                        {{-- HARGA JUAL --}}
-                        <div class="space-y-3">
-
-                            <label for="sell_price" class="block text-base font-extrabold text-gray-800 uppercase tracking-wider">
-                                HARGA JUAL <span class="text-red-500">*</span>
-                            </label>
-
-                            <div class="relative rounded-2xl shadow-sm">
-
-                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5 text-lg font-black text-gray-400">
-                                    Rp
-                                </div>
-
-                                <input
-                                    type="number"
-                                    name="sell_price"
-                                    id="sell_price"
-                                    value="{{ old('sell_price') }}"
-                                    placeholder="0"
-                                    class="block w-full rounded-2xl border-2 pl-14 pr-5 py-4 text-lg font-semibold text-gray-800 placeholder-gray-400 focus:outline-none transition duration-150 {{ $errors->has('sell_price') ? 'border-red-500 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100' }}"
-                                >
-
-                            </div>
-
-                            @error('sell_price')
-                                <p class="text-base font-bold text-red-600 mt-2 flex items-center gap-1.5">
-                                    🚨 {{ $message }}
-                                </p>
-                            @enderror
-
-                        </div>
-
-                        {{-- STOK AWAL --}}
-                        <div class="space-y-3 md:col-span-2">
-
-                            <label for="stock" class="block text-base font-extrabold text-gray-800 uppercase tracking-wider">
-                                JUMLAH STOK <span class="text-red-500">*</span>
-                            </label>
-
-                            <input
-                                type="number"
-                                name="stock"
-                                id="stock"
-                                value="{{ old('stock') }}"
-                                placeholder="0"
-                                min="0"
-                                class="block w-full rounded-2xl border-2 px-5 py-4 text-lg font-semibold text-gray-800 placeholder-gray-400 focus:outline-none transition duration-150 {{ $errors->has('stock') ? 'border-red-500 bg-red-50/30 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100' }}"
-                            >
-
-                            @error('stock')
-                                <p class="text-base font-bold text-red-600 mt-2 flex items-center gap-1.5">
-                                    🚨 {{ $message }}
-                                </p>
-                            @enderror
-
-                        </div>
-
-                    </div>
-
-                    {{-- ACTION BUTTONS --}}
-                    <div class="pt-8 border-t border-gray-100 flex items-center justify-end gap-4">
-
-                        <a
-                            href="{{ route('products.index') }}"
-                            class="px-8 py-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-lg font-extrabold transition duration-150 flex items-center gap-2"
-                        >
-                            ⬅️ Kembali
-                        </a>
-
-                        <button
-                            type="submit"
-                            class="px-10 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-extrabold shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition duration-150 flex items-center gap-2"
-                        >
-                            💾 Simpan Produk
+                        <button type="button"
+                                @click="addVariant()"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-bold transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            <span>+ Tambah Varian</span>
                         </button>
-
                     </div>
 
-                </form>
+                    <template x-if="variants.length === 0">
+                        <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center">
+                            <p class="text-xs text-slate-400">Belum ada varian untuk produk ini. Klik tombol di atas jika produk memiliki varian rasa/ukuran.</p>
+                        </div>
+                    </template>
 
-            </div>
+                    <div class="space-y-2.5">
+                        <template x-for="(variant, idx) in variants" :key="idx">
+                            <div class="flex items-center gap-3 bg-slate-50/80 p-3 rounded-2xl border border-slate-200/80">
+                                <div class="flex-1">
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nama Varian</label>
+                                    <input type="text"
+                                           :name="'variants[' + idx + '][name]'"
+                                           x-model="variant.name"
+                                           placeholder="Misal: Cokelat / Stroberi / Large"
+                                           required
+                                           class="w-full px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="w-44">
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tambahan Harga (+Rp)</label>
+                                    <input type="number"
+                                           :name="'variants[' + idx + '][additional_price]'"
+                                           x-model="variant.additional_price"
+                                           placeholder="0"
+                                           min="0"
+                                           class="w-full px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="pt-5">
+                                    <button type="button"
+                                            @click="removeVariant(idx)"
+                                            class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition"
+                                            title="Hapus Varian">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
 
+                {{-- BUTTONS --}}
+                <div class="pt-6 border-t border-slate-100 flex items-center justify-end gap-3">
+                    <a href="{{ route('products.index') }}"
+                       class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+                        Batal
+                    </a>
+                    <button type="submit"
+                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-98 transition flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>Simpan Produk</span>
+                    </button>
+                </div>
+
+            </form>
         </div>
 
     </div>
-
 </x-app-layout>

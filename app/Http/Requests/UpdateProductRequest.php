@@ -12,6 +12,13 @@ class UpdateProductRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'is_active' => $this->boolean('is_active'),
+        ]);
+    }
+
     public function rules(): array
     {
         return [
@@ -31,7 +38,13 @@ class UpdateProductRequest extends FormRequest
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'sell_price'     => ['required', 'numeric', 'min:0'],
             'stock'          => ['required', 'integer', 'min:0'],
+            'min_stock'      => ['nullable', 'integer', 'min:0'],
             'unit'           => ['required', 'string', 'max:20'],
+            'image'          => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'is_active'      => ['boolean'],
+            'variants'       => ['nullable', 'array'],
+            'variants.*.name' => ['nullable', 'string', 'max:100'],
+            'variants.*.additional_price' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

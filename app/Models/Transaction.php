@@ -15,15 +15,63 @@ class Transaction extends Model
         'total_amount',
         'discount',
         'tax',
+        'service_charge',
         'paid_amount',
         'change_amount',
         'payment_method',
+        'payment_method_id',
+        'promotion_id',
+        'points_earned',
+        'order_type',
+        'note',
         'status',
+        'void_reason',
+        'voided_by',
+        'voided_at',
+        'refund_reason',
+        'refund_amount',
+        'refunded_by',
+        'refunded_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'voided_at' => 'datetime',
+            'refunded_at' => 'datetime',
+            'refund_amount' => 'decimal:2',
+            'total_amount' => 'decimal:2',
+            'discount' => 'decimal:2',
+            'tax' => 'decimal:2',
+            'service_charge' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
+            'change_amount' => 'decimal:2',
+        ];
+    }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function paymentMethod(): BelongsTo
+    {
+        return $this->belongsTo(PaymentMethod::class);
+    }
+
+    public function promotion(): BelongsTo
+    {
+        return $this->belongsTo(Promotion::class);
+    }
+
+    public function voidedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'voided_by');
+    }
+
+    public function refundedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'refunded_by');
     }
 
     public function customer(): BelongsTo
