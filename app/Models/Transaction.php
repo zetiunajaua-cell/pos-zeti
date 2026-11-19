@@ -13,6 +13,7 @@ class Transaction extends Model
         'queue_number',
         'user_id',
         'customer_id',
+        'customer_name',
         'total_amount',
         'discount',
         'tax',

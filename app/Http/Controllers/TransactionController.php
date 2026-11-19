@@ -157,6 +157,11 @@ class TransactionController extends Controller
                 'nullable',
                 'exists:customers,id',
             ],
+            'customer_name' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
             'promotion_id' => [
                 'nullable',
                 'exists:promotions,id',
@@ -393,6 +398,7 @@ class TransactionController extends Controller
             $transaction->queue_number = $queueNumber;
             $transaction->user_id = auth()->id();
             $transaction->customer_id = $customer?->id;
+            $transaction->customer_name = $request->customer_name ?: ($customer?->name ?? null);
             $transaction->promotion_id = $promotion?->id;
             $transaction->total_amount = $finalTotal;
             $transaction->discount = $totalDiscount;

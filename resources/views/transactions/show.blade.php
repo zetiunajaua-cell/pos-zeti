@@ -232,6 +232,13 @@
                             {{ $transaction->customer->name }} ({{ $transaction->customer->member_code }} &bull; {{ $transaction->customer->membership_tier }})
                         </span>
                     </div>
+                @elseif($transaction->customer_name)
+                    <div class="col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <span class="text-slate-400 text-[11px]">Nama Pelanggan</span>
+                        <span class="font-bold text-slate-800 dark:text-white">
+                            {{ $transaction->customer_name }}
+                        </span>
+                    </div>
                 @endif
             </div>
 

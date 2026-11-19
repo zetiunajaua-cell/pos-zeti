@@ -555,8 +555,17 @@
                                         x-show="!cashierSearch || '{{ strtolower($c->name . ' ' . $c->email . ' ' . $branch) }}'.includes(cashierSearch.toLowerCase())">
                                         <td class="px-5 py-4">
                                             <div class="flex items-center gap-3">
-                                                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-sm shrink-0">
-                                                    {{ $initials }}
+                                                <div class="relative shrink-0">
+                                                    @if($c->avatar_url)
+                                                        <img src="{{ $c->avatar_url }}" alt="{{ $c->name }}" class="w-9 h-9 rounded-xl object-cover shadow-sm">
+                                                    @else
+                                                        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-sm">
+                                                            {{ $initials }}
+                                                        </div>
+                                                    @endif
+                                                    <!-- Titik status aktif / tidak aktif -->
+                                                    <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full {{ $c->is_active ? 'bg-emerald-500' : 'bg-rose-500' }} ring-2 ring-white dark:ring-slate-800"
+                                                          title="{{ $c->is_active ? 'Akun Kasir: Aktif' : 'Akun Kasir: Dinonaktifkan' }}"></span>
                                                 </div>
                                                 <div>
                                                     <span class="font-bold text-slate-900 dark:text-white block text-sm">{{ $c->name }}</span>

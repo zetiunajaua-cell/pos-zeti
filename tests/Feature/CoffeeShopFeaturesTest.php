@@ -203,4 +203,42 @@ class CoffeeShopFeaturesTest extends TestCase
         $printResponse->assertSee('LAPORAN TUTUP SHIFT KASIR');
         $printResponse->assertSee('PAS (SEIMBANG)');
     }
+
+    public function test_kasir_dapat_menginput_nama_customer_pada_transaksi(): void
+    {
+        $this->actingAs($this->kasir);
+
+        // Kasir checkout dengan input nama customer "Kak Sarah"
+        $response = $this->post(route('transactions.store'), [
+            'paid_amount' => 50000,
+            'customer_name' => 'Kak Sarah',
+            'order_type' => 'dine_in',
+            'note' => 'Meja 03',
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'quantity' => 1,
+                    'price' => 25000,
+                    'note' => 'Less Sugar',
+                ]
+            ]
+        ]);
+
+        $response->assertRedirect();
+        
+        $transaction = Transaction::latest('id')->first();
+        $this->assertNotNull($transaction);
+        $this->assertEquals('Kak Sarah', $transaction->customer_name);
+        $this->assertEquals('Meja 03', $transaction->note);
+
+        // Periksa tampilan show / receipt
+        $showResponse = $this->get(route('transactions.show', $transaction));
+        $showResponse->assertStatus(200);
+        $showResponse->assertSee('Kak Sarah');
+
+        // Periksa tampilan KOT Barista
+        $kitchenResponse = $this->get(route('transactions.kitchen', $transaction));
+        $kitchenResponse->assertStatus(200);
+        $kitchenResponse->assertSee('Kak Sarah');
+    }
 }

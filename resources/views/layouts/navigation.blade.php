@@ -201,14 +201,19 @@
                             class="flex items-center gap-3 p-1.5 pr-3 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors focus:outline-none">
                         
                         <!-- Avatar Inisial / Foto Profil -->
-                        @if(Auth::user()->avatar_url)
-                            <img src="{{ Auth::user()->avatar_url }}" alt="{{ Auth::user()->name }}"
-                                 class="w-8 h-8 rounded-xl object-cover ring-2 ring-slate-200 dark:ring-slate-700 shadow-sm">
-                        @else
-                            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr {{ optional(auth()->user()->role)->name === 'Admin' ? 'from-purple-600 to-indigo-600' : 'from-blue-600 to-teal-600' }} text-white font-bold text-xs flex items-center justify-center shadow-sm">
-                                {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-                            </div>
-                        @endif
+                        <div class="relative shrink-0">
+                            @if(Auth::user()->avatar_url)
+                                <img src="{{ Auth::user()->avatar_url }}" alt="{{ Auth::user()->name }}"
+                                     class="w-8 h-8 rounded-xl object-cover ring-2 ring-slate-200 dark:ring-slate-700 shadow-sm">
+                            @else
+                                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr {{ optional(auth()->user()->role)->name === 'Admin' ? 'from-purple-600 to-indigo-600' : 'from-blue-600 to-teal-600' }} text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                                    {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
+                                </div>
+                            @endif
+                            <!-- Titik status aktif / tidak aktif -->
+                            <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full {{ Auth::user()->is_active ? 'bg-emerald-500' : 'bg-rose-500' }} ring-2 ring-white dark:ring-slate-900"
+                                  title="{{ Auth::user()->is_active ? 'Akun Aktif' : 'Akun Tidak Aktif' }}"></span>
+                        </div>
 
                         <!-- Info Nama & Role -->
                         <div class="text-left hidden lg:block">
@@ -372,14 +377,19 @@
 
         <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <div class="flex items-center gap-2.5">
-                @if(Auth::user()->avatar_url)
-                    <img src="{{ Auth::user()->avatar_url }}" alt="{{ Auth::user()->name }}"
-                         class="w-8 h-8 rounded-xl object-cover ring-2 ring-slate-200 dark:ring-slate-700 shadow-sm">
-                @else
-                    <div class="w-8 h-8 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
-                        {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-                    </div>
-                @endif
+                <div class="relative shrink-0">
+                    @if(Auth::user()->avatar_url)
+                        <img src="{{ Auth::user()->avatar_url }}" alt="{{ Auth::user()->name }}"
+                             class="w-8 h-8 rounded-xl object-cover ring-2 ring-slate-200 dark:ring-slate-700 shadow-sm">
+                    @else
+                        <div class="w-8 h-8 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                            {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
+                        </div>
+                    @endif
+                    <!-- Titik status aktif / tidak aktif -->
+                    <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full {{ Auth::user()->is_active ? 'bg-emerald-500' : 'bg-rose-500' }} ring-2 ring-white dark:ring-slate-900"
+                          title="{{ Auth::user()->is_active ? 'Akun Aktif' : 'Akun Tidak Aktif' }}"></span>
+                </div>
                 <div>
                     <p class="text-xs font-bold text-slate-800 dark:text-white">{{ Auth::user()->name }}</p>
                     <p class="text-[10px] text-slate-400">{{ optional(auth()->user()->role)->name ?? 'User' }}</p>

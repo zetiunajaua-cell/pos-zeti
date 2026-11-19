@@ -221,6 +221,12 @@
                     Member: {{ $transaction->customer->name }} ({{ $transaction->customer->membership_tier }} - {{ $transaction->customer->member_code }})
                 </td>
             </tr>
+        @elseif($transaction->customer_name)
+            <tr>
+                <td colspan="2" class="text-left" style="font-weight: bold;">
+                    Pelanggan: {{ $transaction->customer_name }}
+                </td>
+            </tr>
         @endif
         @if($transaction->note)
             <tr>

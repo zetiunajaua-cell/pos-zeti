@@ -8,6 +8,7 @@
         searchQuery: '',
         orderType: 'dine_in',
         orderNote: '',
+        customerName: '',
         selectedPaymentMethodId: {{ $paymentMethods->first()?->id ?? 'null' }},
         selectedCustomerId: null,
         selectedPromotionId: null,
@@ -48,6 +49,9 @@
 
         selectCustomer(customer) {
             this.selectedCustomerId = customer ? customer.id : null;
+            if (customer && customer.name) {
+                this.customerName = customer.name;
+            }
             this.showCustomerModal = false;
             this.customerSearch = '';
         },
@@ -108,6 +112,23 @@
             }
         },
 
+        detectItemType(product) {
+            const cat = (product.category_name || '').toLowerCase();
+            const name = (product.name || '').toLowerCase();
+            
+            const drinkKeywords = ['minuman', 'drink', 'beverage', 'kopi', 'coffee', 'tea', 'teh', 'jus', 'juice', 'boba', 'latte', 'espresso', 'cappuccino', 'americano', 'macchiato', 'mocha', 'matcha', 'taro', 'soda', 'ice blend', 'shake', 'milk', 'susu', 'smoothie', 'frappe'];
+            if (drinkKeywords.some(k => cat.includes(k) || name.includes(k))) {
+                return 'drink';
+            }
+
+            const foodKeywords = ['makanan', 'food', 'snack', 'seblak', 'mie', 'nasi', 'pastry', 'roti', 'toast', 'bakso', 'ayam', 'goreng', 'cemilan', 'burger', 'croissant', 'dessert', 'cake', 'kue', 'dimsum'];
+            if (foodKeywords.some(k => cat.includes(k) || name.includes(k))) {
+                return 'food';
+            }
+
+            return 'general';
+        },
+
         addToCart(product, variant = null) {
             const key = product.id + '_' + (variant ? variant.id : 'base');
             let item = this.cart.find(i => i.key === key);
@@ -122,6 +143,7 @@
                 const addPrice = variant ? Number(variant.additional_price || 0) : 0;
                 const unitPrice = Number(product.sell_price) + addPrice;
                 const displayName = variant ? `${product.name} (${variant.name})` : product.name;
+                const itemType = this.detectItemType(product);
 
                 this.cart.push({
                     key: key,
@@ -136,7 +158,9 @@
                     unit: product.unit,
                     quantity: 1,
                     note: '',
-                    showNoteInput: false
+                    showNoteInput: false,
+                    category_name: product.category_name || '',
+                    itemType: itemType
                 });
             }
 
@@ -678,29 +702,22 @@
                 </div>
 
                 <!-- List Item Keranjang -->
-                <div class="divide-y divide-slate-100 dark:divide-slate-800 max-h-60 overflow-y-auto pr-1">
+                <div class="divide-y divide-slate-100 dark:divide-slate-800 max-h-[440px] overflow-y-auto pr-1">
                     <template x-for="item in cart" :key="item.key">
-                        <div class="py-3 space-y-1.5">
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="min-w-0 flex-1">
-                                    <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate" x-text="item.name"></h4>
-                                    <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
-                                        <span x-text="'Rp ' + formatRupiah(item.price)"></span>
-                                        <span>×</span>
-                                        <span class="font-bold text-slate-700 dark:text-slate-300" x-text="item.quantity + ' ' + item.unit"></span>
-                                    </div>
+                        <div class="py-3.5 space-y-2">
+                            <!-- Baris 1: Nama Produk & Total Subtotal Harga -->
+                            <div class="flex items-start justify-between gap-2">
+                                <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100 leading-snug break-words flex-1" x-text="item.name"></h4>
+                                <span class="text-xs font-black text-slate-900 dark:text-white shrink-0 text-right"
+                                      x-text="'Rp ' + formatRupiah(item.price * item.quantity)"></span>
+                            </div>
 
-                                    {{-- Tombol Sangat Jelas Kustom Racikan Minuman Kafe --}}
-                                    <div class="mt-1">
-                                        <button type="button"
-                                                @click="item.showNoteInput = !item.showNoteInput"
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black transition border shadow-2xs"
-                                                :class="item.note ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-200 dark:border-amber-700' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/80 hover:bg-amber-100'">
-                                            <span>☕</span>
-                                            <span x-text="item.note ? ('Racikan: ' + item.note) : '+ Kustom Racikan Minuman (Klik Disini)'"></span>
-                                            <span class="text-[9px]" x-text="item.showNoteInput ? '▲ Tutup' : '▼'"></span>
-                                        </button>
-                                    </div>
+                            <!-- Baris 2: Harga Satuan & Stepper Jumlah (+ / -) & Hapus -->
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+                                    <span x-text="'Rp ' + formatRupiah(item.price)"></span>
+                                    <span>×</span>
+                                    <span class="font-bold text-slate-700 dark:text-slate-300" x-text="item.quantity + ' ' + item.unit"></span>
                                 </div>
 
                                 <div class="flex items-center gap-1.5 shrink-0">
@@ -723,7 +740,7 @@
                                                :value="item.quantity"
                                                @input="updateItemQty(item, $event.target.value)"
                                                title="Ketik jumlah item secara langsung"
-                                               class="w-9 sm:w-10 text-center py-0.5 px-0.5 bg-transparent border-0 text-xs font-black text-slate-800 dark:text-white focus:ring-0 focus:outline-none">
+                                               class="w-8 sm:w-9 text-center py-0.5 px-0.5 bg-transparent border-0 text-xs font-black text-slate-800 dark:text-white focus:ring-0 focus:outline-none">
 
                                         <!-- Tombol Tambah (+) di sebelah kanan -->
                                         <button type="button"
@@ -745,21 +762,84 @@
                                 </div>
                             </div>
 
-                            <!-- Panel Pilihan Racikan Cepat & Custom Minuman -->
-                            <div x-show="item.showNoteInput" x-transition class="mt-2 p-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 space-y-2">
+                            <!-- Baris 3: Tombol Kustom Racikan Minuman / Catatan Makanan / Catatan Item (Konteks Cerdas) -->
+                            <div class="pt-0.5">
+                                <!-- Tombol Racikan Khusus MINUMAN -->
+                                <template x-if="(item.itemType || 'drink') === 'drink'">
+                                    <button type="button"
+                                            @click="item.showNoteInput = !item.showNoteInput"
+                                            class="w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-[11px] font-bold transition border shadow-2xs cursor-pointer"
+                                            :class="item.note ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-200 dark:border-amber-700' : 'bg-amber-50/80 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/80 hover:bg-amber-100'">
+                                        <div class="flex items-center gap-1.5 truncate">
+                                            <span class="text-xs">☕</span>
+                                            <span class="truncate" x-text="item.note ? ('Racikan: ' + item.note) : '+ Kustom Racikan Minuman'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-1 text-[10px] shrink-0 font-black text-amber-700 dark:text-amber-300">
+                                            <span x-text="item.showNoteInput ? 'Tutup ▲' : 'Buka Racikan ▼'"></span>
+                                        </div>
+                                    </button>
+                                </template>
+
+                                <!-- Tombol Catatan Khusus MAKANAN -->
+                                <template x-if="item.itemType === 'food'">
+                                    <button type="button"
+                                            @click="item.showNoteInput = !item.showNoteInput"
+                                            class="w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-[11px] font-bold transition border shadow-2xs cursor-pointer"
+                                            :class="item.note ? 'bg-orange-100 text-orange-900 border-orange-300 dark:bg-orange-950/80 dark:text-orange-200 dark:border-orange-700' : 'bg-orange-50/80 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800/80 hover:bg-orange-100'">
+                                        <div class="flex items-center gap-1.5 truncate">
+                                            <span class="text-xs">🍽️</span>
+                                            <span class="truncate" x-text="item.note ? ('Catatan: ' + item.note) : '+ Catatan Khusus Makanan'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-1 text-[10px] shrink-0 font-black text-orange-700 dark:text-orange-300">
+                                            <span x-text="item.showNoteInput ? 'Tutup ▲' : 'Buka Catatan ▼'"></span>
+                                        </div>
+                                    </button>
+                                </template>
+
+                                <!-- Tombol Catatan Khusus BARANG UMUM -->
+                                <template x-if="item.itemType === 'general'">
+                                    <button type="button"
+                                            @click="item.showNoteInput = !item.showNoteInput"
+                                            class="w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-[11px] font-bold transition border shadow-2xs cursor-pointer"
+                                            :class="item.note ? 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950/80 dark:text-blue-200 dark:border-blue-700' : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'">
+                                        <div class="flex items-center gap-1.5 truncate">
+                                            <span class="text-xs">📝</span>
+                                            <span class="truncate" x-text="item.note ? ('Catatan: ' + item.note) : '+ Tambah Catatan Item'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-1 text-[10px] shrink-0 font-black text-slate-600 dark:text-slate-300">
+                                            <span x-text="item.showNoteInput ? 'Tutup ▲' : 'Buka Catatan ▼'"></span>
+                                        </div>
+                                    </button>
+                                </template>
+                            </div>
+
+                            <!-- Baris 4: Panel Pilihan Racikan Cepat & Catatan Sesuai Jenis Item -->
+                            <div x-show="item.showNoteInput" x-transition class="mt-2 p-3 rounded-2xl border space-y-2.5"
+                                 :class="{
+                                     'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/80': (item.itemType || 'drink') === 'drink',
+                                     'bg-orange-50/90 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800/80': item.itemType === 'food',
+                                     'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700': item.itemType === 'general'
+                                 }">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
-                                        ⚡ PILIH RACIKAN CEPAT (KLIK UNTUK MEMILIH):
+                                    <span class="text-[10px] font-black uppercase tracking-wider"
+                                          :class="{
+                                              'text-amber-800 dark:text-amber-300': (item.itemType || 'drink') === 'drink',
+                                              'text-orange-800 dark:text-orange-300': item.itemType === 'food',
+                                              'text-slate-700 dark:text-slate-300': item.itemType === 'general'
+                                          }">
+                                        <span x-show="(item.itemType || 'drink') === 'drink'">☕ PILIH RACIKAN CEPAT (MINUMAN):</span>
+                                        <span x-show="item.itemType === 'food'">🍽️ PILIH CATATAN KHUSUS (MAKANAN):</span>
+                                        <span x-show="item.itemType === 'general'">📝 PILIH CATATAN KHUSUS:</span>
                                     </span>
                                     <button type="button"
                                             @click="item.note = ''; item.showNoteInput = false"
                                             class="text-[10px] font-bold text-rose-500 hover:text-rose-700">
-                                        ✕ Bersihkan Racikan
+                                        ✕ Bersihkan Catatan
                                     </button>
                                 </div>
 
                                 {{-- Barisan Tombol Cepat Custom Racikan Minuman Kafe --}}
-                                <div class="flex flex-wrap items-center gap-1.5">
+                                <div x-show="(item.itemType || 'drink') === 'drink'" class="flex flex-wrap items-center gap-1.5">
                                     <button type="button"
                                             @click="toggleItemNote(item, 'Less Ice')"
                                             class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
@@ -804,10 +884,78 @@
                                     </button>
                                 </div>
 
+                                {{-- Barisan Tombol Cepat Catatan Makanan --}}
+                                <div x-show="item.itemType === 'food'" class="flex flex-wrap items-center gap-1.5">
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Pedas')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Pedas') && !item.note.includes('Tidak Pedas') && !item.note.includes('Sangat Pedas')) ? 'bg-orange-600 text-white border-orange-600' : 'bg-white dark:bg-slate-800 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-900 hover:bg-orange-50'">
+                                        🌶️ Pedas
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Sangat Pedas')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Sangat Pedas')) ? 'bg-rose-600 text-white border-rose-600' : 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900 hover:bg-rose-50'">
+                                        🔥 Sangat Pedas
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Tidak Pedas')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Tidak Pedas')) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900 hover:bg-emerald-50'">
+                                        🥦 Tidak Pedas
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Pisah Sambal')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Pisah Sambal')) ? 'bg-amber-600 text-white border-amber-600' : 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900 hover:bg-amber-50'">
+                                        🥣 Pisah Sambal
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Hangatkan / Panaskan')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Hangatkan / Panaskan')) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900 hover:bg-blue-50'">
+                                        ♨️ Hangatkan
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Pisah Kuah')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Pisah Kuah')) ? 'bg-teal-600 text-white border-teal-600' : 'bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-900 hover:bg-teal-50'">
+                                        🥡 Pisah Kuah
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Tanpa Bawang')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Tanpa Bawang')) ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-900 hover:bg-purple-50'">
+                                        🚫 Tanpa Bawang
+                                    </button>
+                                </div>
+
+                                {{-- Barisan Tombol Cepat Catatan Barang Umum --}}
+                                <div x-show="item.itemType === 'general'" class="flex flex-wrap items-center gap-1.5">
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Bungkus Kado')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Bungkus Kado')) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900 hover:bg-indigo-50'">
+                                        🎁 Bungkus Kado
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Bubble Wrap')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Bubble Wrap')) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900 hover:bg-indigo-50'">
+                                        📦 Bubble Wrap
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Kantong Terpisah')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Kantong Terpisah')) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900 hover:bg-indigo-50'">
+                                        🛍️ Kantong Terpisah
+                                    </button>
+                                </div>
+
                                 <input type="text"
                                        x-model="item.note"
-                                       placeholder="Atau ketik catatan khusus racikan lainnya disini..."
-                                       class="w-full text-[11px] font-medium py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-amber-500">
+                                       :placeholder="(item.itemType || 'drink') === 'drink' ? 'Atau ketik racikan minuman (cth: Less sweet, sirup vanilla)...' : (item.itemType === 'food' ? 'Atau ketik catatan makanan (cth: jangan terlalu asin, ekstra piring)...' : 'Tuliskan catatan khusus untuk item ini...')"
+                                       class="w-full text-[11px] font-medium py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-blue-500">
                             </div>
                         </div>
                     </template>
@@ -846,6 +994,35 @@
                            x-model="orderNote"
                            :placeholder="orderType === 'dine_in' ? 'Ketik nomor meja atau pilih tombol di atas (opsional)...' : 'Contoh: Bungkus terpisah (opsional, boleh dikosongkan)...'"
                            class="w-full text-xs font-medium py-1.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- INPUT NAMA PELANGGAN (CUSTOMER) -->
+                <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="customer_name_input" class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            Nama Pelanggan (Customer)
+                        </label>
+                        <span class="text-[10px] text-slate-400">Untuk struk & panggilan barista</span>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <input type="text"
+                               id="customer_name_input"
+                               x-model="customerName"
+                               placeholder="Ketik nama pelanggan (contoh: Kak Sarah)..."
+                               class="w-full pl-9 pr-8 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 transition">
+                        <button type="button"
+                                x-show="customerName"
+                                @click="customerName = ''"
+                                class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-rose-500 transition cursor-pointer"
+                                title="Hapus nama">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- PILIHAN PELANGGAN / MEMBERSHIP (Modal Selector Canggih) -->
@@ -1159,6 +1336,7 @@
                         </template>
 
                         <input type="hidden" name="customer_id" :value="selectedCustomerId">
+                        <input type="hidden" name="customer_name" :value="customerName">
                         <input type="hidden" name="promotion_id" :value="selectedPromotionId">
                         <input type="hidden" name="paid_amount" :value="paidAmount">
                         <input type="hidden" name="payment_method_id" :value="selectedPaymentMethodId">

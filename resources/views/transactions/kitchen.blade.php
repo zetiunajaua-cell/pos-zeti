@@ -80,8 +80,15 @@
                 @endif
             </div>
 
+            @if($transaction->customer_name || $transaction->customer)
+                <div class="mt-2 pt-2 border-t border-amber-200/80 dark:border-amber-800/80 text-xs font-bold text-slate-800 dark:text-amber-100 flex items-center justify-center gap-1.5">
+                    <span>👤 Pelanggan:</span>
+                    <span class="font-black text-amber-950 dark:text-amber-200 text-sm">{{ $transaction->customer_name ?: $transaction->customer->name }}</span>
+                </div>
+            @endif
+
             @if($transaction->note)
-                <div class="mt-2 pt-2 border-t border-amber-200/80 dark:border-amber-800/80 text-xs font-bold text-slate-800 dark:text-amber-100">
+                <div class="mt-1 pt-1 border-t border-amber-200/40 dark:border-amber-800/40 text-xs font-bold text-slate-800 dark:text-amber-100">
                     📍 Meja / Catatan: <span class="underline decoration-amber-400 decoration-2 font-black">{{ $transaction->note }}</span>
                 </div>
             @endif

@@ -70,6 +70,22 @@
                                     {{ strtoupper(substr($user->name, 0, 2)) }}
                                 </div>
                             @endif
+
+                            <!-- Titik Bulat Status Akun (Hijau = Aktif, Merah = Tidak Aktif) -->
+                            <div class="absolute -top-1 -right-1 z-10"
+                                 title="{{ $user->is_active ? 'Status Akun: Aktif' : 'Status Akun: Tidak Aktif' }}">
+                                @if($user->is_active)
+                                    <span class="relative flex h-5 w-5">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-5 w-5 bg-emerald-500 border-2 border-white dark:border-slate-800 shadow-xs" title="Akun Aktif"></span>
+                                    </span>
+                                @else
+                                    <span class="relative flex h-5 w-5">
+                                        <span class="relative inline-flex rounded-full h-5 w-5 bg-rose-500 border-2 border-white dark:border-slate-800 shadow-xs" title="Akun Tidak Aktif"></span>
+                                    </span>
+                                @endif
+                            </div>
+
                             <!-- Role Badge Icon Overlay -->
                             <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-xl {{ $roleName === 'Admin' ? 'bg-purple-700 text-white' : 'bg-emerald-600 text-white' }} flex items-center justify-center shadow-md">
                                 @if($roleName === 'Admin')
@@ -242,6 +258,21 @@
                                         {{ strtoupper(substr($user->name, 0, 2)) }}
                                     </div>
                                 </template>
+
+                                <!-- Titik Bulat Status Akun (Hijau = Aktif, Merah = Tidak Aktif) -->
+                                <div class="absolute -top-1.5 -right-1.5 z-10 pointer-events-none"
+                                     title="{{ $user->is_active ? 'Status Akun: Aktif' : 'Status Akun: Tidak Aktif' }}">
+                                    @if($user->is_active)
+                                        <span class="relative flex h-5 w-5">
+                                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                            <span class="relative inline-flex rounded-full h-5 w-5 bg-emerald-500 border-2 border-white dark:border-slate-800 shadow-xs" title="Akun Aktif"></span>
+                                        </span>
+                                    @else
+                                        <span class="relative flex h-5 w-5">
+                                            <span class="relative inline-flex rounded-full h-5 w-5 bg-rose-500 border-2 border-white dark:border-slate-800 shadow-xs" title="Akun Tidak Aktif"></span>
+                                        </span>
+                                    @endif
+                                </div>
 
                                 <!-- Tombol Overlay Kamera untuk Klik Cepat -->
                                 <button type="button" @click="$refs.photoInput.click()"
