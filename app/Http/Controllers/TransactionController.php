@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\CashierShift;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\PaymentMethod;
@@ -66,6 +67,18 @@ class TransactionController extends Controller
             'service_charge_rate' => (float) setting('service_charge_rate', 5),
         ];
 
+        // Shift Kasir Aktif (Task Kontrol Laci Kas)
+        $activeShift = CashierShift::where('user_id', auth()->id())
+            ->where('status', 'open')
+            ->latest('id')
+            ->first();
+
+        $activeShiftSummary = $activeShift ? $activeShift->calculateSalesSummary() : null;
+
+        // Nomor antrean harian berikutnya (otomatis dari sistem)
+        $todayMaxQueue = Transaction::whereDate('created_at', now()->toDateString())->max('queue_number');
+        $nextQueueNumber = '#' . str_pad(($todayMaxQueue ? (int)$todayMaxQueue : 0) + 1, 2, '0', STR_PAD_LEFT);
+
         // Catat aktivitas pembukaan Terminal Kasir (POS)
         if (auth()->check() && !$request->ajax() && empty($search) && empty($categoryId)) {
             $sessionKey = 'last_terminal_access_log_' . auth()->id();
@@ -93,7 +106,10 @@ class TransactionController extends Controller
             'search',
             'categoryId',
             'latestTransaction',
-            'taxSettings'
+            'taxSettings',
+            'activeShift',
+            'activeShiftSummary',
+            'nextQueueNumber'
         ));
     }
 
@@ -366,9 +382,15 @@ class TransactionController extends Controller
             |--------------------------------------------------------------------------
             */
 
+            // Generate nomor antrean harian (reset tiap hari, misal #01, #02, dst)
+            $today = now()->toDateString();
+            $todayMaxQueue = Transaction::whereDate('created_at', $today)->max('queue_number');
+            $queueNumber = ($todayMaxQueue ? (int)$todayMaxQueue : 0) + 1;
+
             $transaction = new Transaction();
 
             $transaction->invoice_number = $invoiceNumber;
+            $transaction->queue_number = $queueNumber;
             $transaction->user_id = auth()->id();
             $transaction->customer_id = $customer?->id;
             $transaction->promotion_id = $promotion?->id;
@@ -515,6 +537,20 @@ class TransactionController extends Controller
         $pdf->setPaper([0, 0, 226.77, 650], 'portrait');
 
         return $pdf->stream('struk-' . $transaction->invoice_number . '.pdf');
+    }
+
+    /**
+     * Slip Pesanan Khusus Barista / Dapur (Kitchen Order Ticket - KOT)
+     */
+    public function kitchenTicket(Transaction $transaction)
+    {
+        $transaction->load([
+            'user',
+            'items.product',
+            'items.variant',
+        ]);
+
+        return view('transactions.kitchen', compact('transaction'));
     }
 
     /**

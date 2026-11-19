@@ -171,9 +171,14 @@
             <!-- User Profile Chip -->
             <a href="{{ route('profile.edit') }}"
                class="flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr {{ optional(auth()->user()->role)->name === 'Admin' ? 'from-purple-600 to-indigo-600' : 'from-blue-600 to-teal-600' }} text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                    {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
-                </div>
+                @if(auth()->user()->avatar_url)
+                    <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}"
+                         class="w-8 h-8 rounded-xl object-cover ring-2 ring-slate-200 dark:ring-slate-700 shadow-xs">
+                @else
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr {{ optional(auth()->user()->role)->name === 'Admin' ? 'from-purple-600 to-indigo-600' : 'from-blue-600 to-teal-600' }} text-white font-bold text-xs flex items-center justify-center shadow-xs">
+                        {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                    </div>
+                @endif
                 <div class="text-left hidden sm:block">
                     <span class="text-xs font-bold text-slate-800 dark:text-white leading-tight block truncate max-w-[120px]">
                         {{ auth()->user()->name }}

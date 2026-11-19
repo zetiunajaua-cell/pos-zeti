@@ -60,11 +60,16 @@
                     
                     <!-- Left: Identity & Role -->
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-                        <!-- Avatar -->
+                        <!-- Avatar Profil -->
                         <div class="relative shrink-0">
-                            <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr {{ $roleName === 'Admin' ? 'from-purple-600 to-indigo-600 ring-4 ring-purple-100 dark:ring-purple-900/40' : 'from-blue-600 to-teal-600 ring-4 ring-blue-100 dark:ring-blue-900/40' }} text-white font-black text-2xl flex items-center justify-center shadow-lg">
-                                {{ strtoupper(substr($user->name, 0, 2)) }}
-                            </div>
+                            @if($user->avatar_url)
+                                <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}"
+                                     class="w-20 h-20 rounded-3xl object-cover ring-4 {{ $roleName === 'Admin' ? 'ring-purple-100 dark:ring-purple-900/40' : 'ring-blue-100 dark:ring-blue-900/40' }} shadow-lg">
+                            @else
+                                <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr {{ $roleName === 'Admin' ? 'from-purple-600 to-indigo-600 ring-4 ring-purple-100 dark:ring-purple-900/40' : 'from-blue-600 to-teal-600 ring-4 ring-blue-100 dark:ring-blue-900/40' }} text-white font-black text-2xl flex items-center justify-center shadow-lg">
+                                    {{ strtoupper(substr($user->name, 0, 2)) }}
+                                </div>
+                            @endif
                             <!-- Role Badge Icon Overlay -->
                             <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-xl {{ $roleName === 'Admin' ? 'bg-purple-700 text-white' : 'bg-emerald-600 text-white' }} flex items-center justify-center shadow-md">
                                 @if($roleName === 'Admin')
@@ -174,12 +179,126 @@
             <div x-show="activeTab === 'profile'" class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 dark:border-slate-700/60 space-y-6">
                 <div>
                     <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Informasi Data Pengguna</h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Perbarui nama lengkap dan alamat email yang terdaftar pada sistem kasir.</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Unggah foto profil pribadi serta perbarui nama lengkap dan alamat email akun kasir/admin Anda.</p>
                 </div>
 
-                <form method="post" action="{{ route('profile.update') }}" class="space-y-5">
+                <form method="post" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="space-y-6"
+                      x-data="{ 
+                          photoName: null, 
+                          photoPreview: null,
+                          deleteAvatar: false,
+                          hasExistingAvatar: {{ $user->avatar ? 'true' : 'false' }}
+                      }">
                     @csrf
                     @method('patch')
+
+                    <!-- Input Hidden Status Hapus Foto -->
+                    <input type="hidden" name="delete_avatar" :value="deleteAvatar ? '1' : '0'">
+
+                    <!-- SECTION UPLOAD FOTO PROFIL -->
+                    <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700/80">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
+                            Foto Profil Akun
+                        </label>
+                        
+                        <div class="flex flex-col sm:flex-row items-center gap-5">
+                            <!-- Preview Foto Rounded 3xl -->
+                            <div class="relative shrink-0 group">
+                                <!-- File input tersembunyi -->
+                                <input type="file" id="avatar" name="avatar" class="hidden" x-ref="photoInput"
+                                       accept="image/png,image/jpeg,image/jpg,image/webp"
+                                       @change="
+                                           photoName = $refs.photoInput.files[0]?.name;
+                                           const reader = new FileReader();
+                                           reader.onload = (e) => {
+                                               photoPreview = e.target.result;
+                                               deleteAvatar = false;
+                                           };
+                                           if ($refs.photoInput.files[0]) {
+                                               reader.readAsDataURL($refs.photoInput.files[0]);
+                                           }
+                                       ">
+
+                                <!-- Tampilan saat user memilih file foto baru (live preview) -->
+                                <template x-if="photoPreview && !deleteAvatar">
+                                    <div class="relative">
+                                        <img :src="photoPreview" alt="Preview Foto" class="w-24 h-24 rounded-3xl object-cover ring-4 ring-blue-500/30 shadow-md">
+                                        <span class="absolute top-1 right-1 px-1.5 py-0.5 rounded-md bg-blue-600 text-white text-[9px] font-black uppercase">
+                                            Baru
+                                        </span>
+                                    </div>
+                                </template>
+
+                                <!-- Tampilan foto profil saat ini (jika ada dan tidak dihapus) -->
+                                <template x-if="!photoPreview && hasExistingAvatar && !deleteAvatar">
+                                    <div class="relative">
+                                        <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="w-24 h-24 rounded-3xl object-cover ring-4 ring-slate-200 dark:ring-slate-700 shadow-md">
+                                    </div>
+                                </template>
+
+                                <!-- Tampilan inisial default (jika belum ada foto atau dipilih untuk dihapus) -->
+                                <template x-if="(!photoPreview && !hasExistingAvatar) || deleteAvatar">
+                                    <div class="w-24 h-24 rounded-3xl bg-gradient-to-tr {{ $roleName === 'Admin' ? 'from-purple-600 to-indigo-600 ring-4 ring-purple-100 dark:ring-purple-900/40' : 'from-blue-600 to-teal-600 ring-4 ring-blue-100 dark:ring-blue-900/40' }} text-white font-black text-3xl flex items-center justify-center shadow-md">
+                                        {{ strtoupper(substr($user->name, 0, 2)) }}
+                                    </div>
+                                </template>
+
+                                <!-- Tombol Overlay Kamera untuk Klik Cepat -->
+                                <button type="button" @click="$refs.photoInput.click()"
+                                        class="absolute inset-0 rounded-3xl bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[11px] font-bold cursor-pointer backdrop-blur-2xs"
+                                        title="Klik untuk memilih foto baru">
+                                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    Ubah
+                                </button>
+                            </div>
+
+                            <!-- Tombol Aksi & Keterangan Format -->
+                            <div class="space-y-2 text-center sm:text-left flex-1">
+                                <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                                    <button type="button" @click="$refs.photoInput.click()"
+                                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition cursor-pointer">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                        <span x-text="photoPreview || hasExistingAvatar ? 'Ganti Foto' : 'Pilih Foto Sendiri'">Pilih Foto Sendiri</span>
+                                    </button>
+
+                                    <!-- Tombol Batal / Hapus Foto -->
+                                    <template x-if="photoPreview">
+                                        <button type="button" @click="photoPreview = null; photoName = null; $refs.photoInput.value = ''"
+                                                class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-semibold transition cursor-pointer">
+                                            Batal Pilih
+                                        </button>
+                                    </template>
+
+                                    <template x-if="!photoPreview && hasExistingAvatar && !deleteAvatar">
+                                        <button type="button" @click="deleteAvatar = true"
+                                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold transition cursor-pointer">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            Hapus Foto
+                                        </button>
+                                    </template>
+
+                                    <template x-if="deleteAvatar">
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold">
+                                            <span>Foto akan dihapus saat disimpan</span>
+                                            <button type="button" @click="deleteAvatar = false" class="underline ml-1 cursor-pointer">Batal</button>
+                                        </span>
+                                    </template>
+                                </div>
+
+                                <p class="text-[11px] text-slate-400 dark:text-slate-500">
+                                    Format didukung: JPG, JPEG, PNG, WEBP (Maksimal 2 MB). Foto akan ditampilkan di profil, header atas, dan menu akun Anda.
+                                </p>
+                                @if ($errors->has('avatar'))
+                                    <p class="mt-1 text-xs text-rose-500 font-bold">{{ $errors->first('avatar') }}</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <!-- Nama Lengkap -->

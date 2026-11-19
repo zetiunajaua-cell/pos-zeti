@@ -59,6 +59,14 @@
                     </button>
                 @endif
 
+                {{-- Tombol Cetak Slip Barista / Dapur (KOT) --}}
+                <a href="{{ route('transactions.kitchen', $transaction->id) }}"
+                   target="_blank"
+                   class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold transition shadow-xs">
+                    <span>☕</span>
+                    <span>Slip Barista (KOT)</span>
+                </a>
+
                 {{-- Tombol Cetak / Simpan PDF (Task 5) --}}
                 <a href="{{ route('transactions.pdf', $transaction->id) }}"
                    target="_blank"
@@ -188,6 +196,15 @@
                         <strong>Catatan Transaksi:</strong> {{ $transaction->note }}
                     </div>
                 @endif
+
+                {{-- Nomor Antrean Pesanan Kafe / F&B --}}
+                <div class="mt-3.5 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border-2 border-dashed border-amber-300 dark:border-amber-800 text-center">
+                    <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-700 dark:text-amber-400 block">Nomor Antrean Pesanan</span>
+                    <span class="text-3xl font-black text-amber-950 dark:text-amber-100 font-mono tracking-wider block py-0.5">
+                        {{ $transaction->formatted_queue_number }}
+                    </span>
+                    <span class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">Harap tunggu nomor dipanggil barista</span>
+                </div>
             </div>
 
             <!-- Meta Transaksi Grid -->

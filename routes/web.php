@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\CashierShiftController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -14,10 +15,25 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
-// Halaman awal langsung diarahkan ke Login (atau Dashboard jika sudah login)
+// Halaman Utama / Landing Page (Welcome)
 Route::get('/', function () {
-    return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
-});
+    $totalProducts = 0;
+    $activeProducts = 0;
+    $totalCategories = 0;
+    $totalStock = 0;
+
+    if (\Illuminate\Support\Facades\Schema::hasTable('products')) {
+        $totalProducts = \App\Models\Product::count();
+        $activeProducts = \App\Models\Product::where('is_active', true)->count();
+        $totalStock = (int) \App\Models\Product::sum('stock');
+    }
+
+    if (\Illuminate\Support\Facades\Schema::hasTable('categories')) {
+        $totalCategories = \App\Models\Category::count();
+    }
+
+    return view('welcome', compact('totalProducts', 'activeProducts', 'totalCategories', 'totalStock'));
+})->name('welcome');
 
 /*
 |--------------------------------------------------------------------------
@@ -111,10 +127,20 @@ Route::middleware(['auth', 'role:Kasir,Admin'])->group(function () {
         ->name('transactions.show');
     Route::get('/transactions/{transaction}/pdf', [TransactionController::class, 'pdf'])
         ->name('transactions.pdf');
+    Route::get('/transactions/{transaction}/kitchen', [TransactionController::class, 'kitchenTicket'])
+        ->name('transactions.kitchen');
     Route::post('/transactions/{transaction}/void', [TransactionController::class, 'void'])
         ->name('transactions.void');
     Route::post('/transactions/{transaction}/refund', [TransactionController::class, 'refund'])
         ->name('transactions.refund');
+
+    // Manajemen Shift Kasir (Buka & Tutup Kasir / Kontrol Kas Laci)
+    Route::post('/cashier-shifts/open', [CashierShiftController::class, 'open'])
+        ->name('cashier-shifts.open');
+    Route::post('/cashier-shifts/{shift}/close', [CashierShiftController::class, 'close'])
+        ->name('cashier-shifts.close');
+    Route::get('/cashier-shifts/{shift}/print', [CashierShiftController::class, 'printReport'])
+        ->name('cashier-shifts.print');
 });
 
 require __DIR__.'/auth.php';

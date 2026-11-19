@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['role_id', 'name', 'store_branch', 'email', 'phone', 'password', 'is_active'])]
+#[Fillable(['role_id', 'name', 'store_branch', 'email', 'phone', 'avatar', 'password', 'is_active'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -24,6 +24,20 @@ class User extends Authenticatable
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * Get avatar URL or null.
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (!empty($this->avatar)) {
+            if (str_starts_with($this->avatar, 'http://') || str_starts_with($this->avatar, 'https://')) {
+                return $this->avatar;
+            }
+            return asset('storage/' . $this->avatar);
+        }
+        return null;
     }
 
     protected function casts(): array

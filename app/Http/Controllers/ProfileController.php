@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -71,7 +72,27 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
-        $user->fill($request->validated());
+        $validated = $request->validated();
+
+        // Handle delete avatar / reset ke foto inisial default
+        if ($request->boolean('delete_avatar')) {
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $user->avatar = null;
+        }
+
+        // Handle upload avatar baru
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = $path;
+        }
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -81,7 +102,7 @@ class ProfileController extends Controller
 
         ActivityLog::record(
             'UPDATE_PROFILE',
-            "Pengguna {$user->name} memperbarui informasi profil akun.",
+            "Pengguna {$user->name} memperbarui informasi profil akun" . ($request->hasFile('avatar') ? ' dan mengunggah foto profil baru.' : '.'),
             $user,
             ['name' => $user->name, 'email' => $user->email]
         );

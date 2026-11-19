@@ -10,6 +10,7 @@ class Transaction extends Model
 {
     protected $fillable = [
         'invoice_number',
+        'queue_number',
         'user_id',
         'customer_id',
         'total_amount',
@@ -82,5 +83,22 @@ class Transaction extends Model
     public function items(): HasMany
     {
         return $this->hasMany(TransactionItem::class);
+    }
+
+    /**
+     * Format Nomor Antrean Pesanan Harian (e.g. #01, #02)
+     */
+    public function getFormattedQueueNumberAttribute(): string
+    {
+        $num = $this->queue_number;
+        if (!$num) {
+            // Fallback dari nomor urut invoice jika data lama
+            if (preg_match('/-(\d+)$/', $this->invoice_number, $matches)) {
+                $num = (int)$matches[1];
+            } else {
+                $num = $this->id;
+            }
+        }
+        return '#' . str_pad($num, 2, '0', STR_PAD_LEFT);
     }
 }

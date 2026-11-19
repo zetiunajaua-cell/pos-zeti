@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -95,5 +97,77 @@ class ProfileTest extends TestCase
             ->assertRedirect('/profile');
 
         $this->assertNotNull($user->fresh());
+    }
+
+    public function test_user_can_upload_avatar_photo(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $file = UploadedFile::fake()->image('profile_pic.jpg', 300, 300);
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile', [
+                'name' => 'Admin Zeti',
+                'email' => $user->email,
+                'avatar' => $file,
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile');
+
+        $user->refresh();
+        $this->assertNotNull($user->avatar);
+        Storage::disk('public')->assertExists($user->avatar);
+        $this->assertNotNull($user->avatar_url);
+    }
+
+    public function test_user_can_delete_avatar_photo(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create([
+            'avatar' => 'avatars/existing_pic.jpg',
+        ]);
+        Storage::disk('public')->put('avatars/existing_pic.jpg', 'fake-image-content');
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile', [
+                'name' => $user->name,
+                'email' => $user->email,
+                'delete_avatar' => '1',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile');
+
+        $user->refresh();
+        $this->assertNull($user->avatar);
+        $this->assertNull($user->avatar_url);
+        Storage::disk('public')->assertMissing('avatars/existing_pic.jpg');
+    }
+
+    public function test_user_cannot_upload_invalid_avatar_file(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $file = UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf');
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile', [
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $file,
+            ]);
+
+        $response->assertSessionHasErrors('avatar');
+        $user->refresh();
+        $this->assertNull($user->avatar);
     }
 }

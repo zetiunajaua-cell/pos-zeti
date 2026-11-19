@@ -21,6 +21,10 @@
         customerSearch: '',
         showPromotionModal: false,
         promotionSearch: '',
+        showOpenShiftModal: false,
+        showCloseShiftModal: false,
+        shiftStartingCash: 200000,
+        shiftActualCash: {{ $activeShiftSummary['expected_cash'] ?? 0 }},
 
         get filteredCustomers() {
             const q = (this.customerSearch || '').toLowerCase().trim();
@@ -202,8 +206,30 @@
             this.paidAmount = this.total;
         },
 
+        setCash(amount) {
+            this.paidAmount = amount;
+        },
+
         addCash(amount) {
             this.paidAmount = (Number(this.paidAmount) || 0) + amount;
+        },
+
+        appendItemNote(item, text) {
+            this.toggleItemNote(item, text);
+        },
+
+        toggleItemNote(item, text) {
+            if (!item.note || item.note.trim() === '') {
+                item.note = text;
+                return;
+            }
+            let parts = item.note.split(',').map(s => s.trim()).filter(Boolean);
+            if (parts.includes(text)) {
+                parts = parts.filter(p => p !== text);
+            } else {
+                parts.push(text);
+            }
+            item.note = parts.join(', ');
         },
 
         get currentPaymentMethod() {
@@ -430,7 +456,28 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            {{-- Status & Kontrol Shift Kasir (Audit Laci Kas) --}}
+            @if($activeShift)
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Shift Buka {{ $activeShift->opened_at->format('H:i') }} &bull; Modal Rp {{ number_format($activeShift->starting_cash, 0, ',', '.') }}</span>
+                </div>
+                <button type="button"
+                        @click="showCloseShiftModal = true"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-xs">
+                    <span>🔒</span>
+                    <span>Tutup Shift Kasir</span>
+                </button>
+            @else
+                <button type="button"
+                        @click="showOpenShiftModal = true"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-black transition shadow-sm">
+                    <span>🔓</span>
+                    <span>Buka Shift Kasir</span>
+                </button>
+            @endif
+
             @if($latestTransaction)
                 <a href="{{ route('transactions.show', $latestTransaction->id) }}"
                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/80 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-xs font-bold transition shadow-xs">
@@ -593,6 +640,22 @@
                     </button>
                 </div>
 
+                <!-- Banner Nomor Antrean Harian Otomatis (Kafe / F&B) -->
+                <div class="p-3 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-amber-500 text-white font-black flex items-center justify-center text-sm shadow-2xs">
+                            #
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 block leading-tight">Nomor Antrean Berikutnya</span>
+                            <span class="text-sm font-black text-amber-950 dark:text-amber-200 font-mono">{{ $nextQueueNumber }}</span>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2.5 py-1 rounded-lg">
+                        ✓ Otomatis dari Sistem
+                    </span>
+                </div>
+
                 <!-- SELECTOR TIPE PESANAN: DINE IN VS TAKE AWAY (Task 19) -->
                 <div>
                     <span class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Tipe Pesanan Pelanggan</span>
@@ -625,9 +688,18 @@
                                         <span x-text="'Rp ' + formatRupiah(item.price)"></span>
                                         <span>×</span>
                                         <span class="font-bold text-slate-700 dark:text-slate-300" x-text="item.quantity + ' ' + item.unit"></span>
-                                        <template x-if="item.note">
-                                            <span class="text-[10px] text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded font-medium truncate max-w-[140px]" x-text="'Catatan: ' + item.note"></span>
-                                        </template>
+                                    </div>
+
+                                    {{-- Tombol Sangat Jelas Kustom Racikan Minuman Kafe --}}
+                                    <div class="mt-1">
+                                        <button type="button"
+                                                @click="item.showNoteInput = !item.showNoteInput"
+                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black transition border shadow-2xs"
+                                                :class="item.note ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-200 dark:border-amber-700' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/80 hover:bg-amber-100'">
+                                            <span>☕</span>
+                                            <span x-text="item.note ? ('Racikan: ' + item.note) : '+ Kustom Racikan Minuman (Klik Disini)'"></span>
+                                            <span class="text-[9px]" x-text="item.showNoteInput ? '▲ Tutup' : '▼'"></span>
+                                        </button>
                                     </div>
                                 </div>
 
@@ -664,15 +736,6 @@
                                         </button>
                                     </div>
 
-                                    {{-- Tombol Toggle Catatan Khusus Item (Task 20) --}}
-                                    <button type="button"
-                                            @click="item.showNoteInput = !item.showNoteInput"
-                                            title="Tambah catatan pesanan item (tidak pedas, tanpa es, dll)"
-                                            class="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition"
-                                            :class="{'text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60': item.note}">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                    </button>
-
                                     <button type="button"
                                             @click="removeItem(item)"
                                             title="Hapus dari keranjang"
@@ -682,12 +745,69 @@
                                 </div>
                             </div>
 
-                            <!-- Input Catatan Khusus Item Expandable (Task 20) -->
-                            <div x-show="item.showNoteInput" x-transition class="pt-1">
+                            <!-- Panel Pilihan Racikan Cepat & Custom Minuman -->
+                            <div x-show="item.showNoteInput" x-transition class="mt-2 p-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                                        ⚡ PILIH RACIKAN CEPAT (KLIK UNTUK MEMILIH):
+                                    </span>
+                                    <button type="button"
+                                            @click="item.note = ''; item.showNoteInput = false"
+                                            class="text-[10px] font-bold text-rose-500 hover:text-rose-700">
+                                        ✕ Bersihkan Racikan
+                                    </button>
+                                </div>
+
+                                {{-- Barisan Tombol Cepat Custom Racikan Minuman Kafe --}}
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Less Ice')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Less Ice')) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900 hover:bg-blue-50'">
+                                        ❄️ Less Ice
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'No Ice')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('No Ice')) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900 hover:bg-blue-50'">
+                                        🧊 No Ice
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Panas / Hot')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Panas / Hot')) ? 'bg-amber-600 text-white border-amber-600' : 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900 hover:bg-amber-50'">
+                                        🔥 Hot (Panas)
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Less Sugar')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Less Sugar')) ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-900 hover:bg-purple-50'">
+                                        🍬 Less Sugar
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'No Sugar')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('No Sugar')) ? 'bg-rose-600 text-white border-rose-600' : 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900 hover:bg-rose-50'">
+                                        🚫 No Sugar
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Oatmilk')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Oatmilk')) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900 hover:bg-emerald-50'">
+                                        🥛 Oatmilk
+                                    </button>
+                                    <button type="button"
+                                            @click="toggleItemNote(item, 'Extra Shot')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition shadow-2xs"
+                                            :class="(item.note && item.note.includes('Extra Shot')) ? 'bg-amber-700 text-white border-amber-700' : 'bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800 hover:bg-amber-50'">
+                                        ☕ Extra Shot
+                                    </button>
+                                </div>
+
                                 <input type="text"
                                        x-model="item.note"
-                                       placeholder="Tulis catatan (contoh: tidak pedas, gula sedikit, tanpa es)..."
-                                       class="w-full text-[11px] font-medium py-1 px-2.5 rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-950/30 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-1 focus:ring-blue-500">
+                                       placeholder="Atau ketik catatan khusus racikan lainnya disini..."
+                                       class="w-full text-[11px] font-medium py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-amber-500">
                             </div>
                         </div>
                     </template>
@@ -701,12 +821,30 @@
                     </div>
                 </div>
 
-                <!-- Catatan Umum Transaksi (Task 20) -->
+                <!-- Pilihan Meja / Catatan Transaksi (Opsional) -->
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Catatan Transaksi / Meja</label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            <span x-text="orderType === 'dine_in' ? 'Pilihan No. Meja (Opsional)' : 'Catatan Pesanan (Opsional)'"></span>
+                        </label>
+                        <span class="text-[10px] text-slate-400">Antrean <strong class="text-amber-600 font-mono">{{ $nextQueueNumber }}</strong> otomatis</span>
+                    </div>
+
+                    <!-- Tombol Cepat Pilihan Meja (Khusus jika Makan di Tempat / Dine In) -->
+                    <template x-if="orderType === 'dine_in'">
+                        <div class="flex flex-wrap items-center gap-1 mb-1.5">
+                            <button type="button" @click="orderNote = 'Meja 01'" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700" :class="{'bg-blue-100 text-blue-800 border-blue-300': orderNote === 'Meja 01'}">Meja 01</button>
+                            <button type="button" @click="orderNote = 'Meja 02'" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700" :class="{'bg-blue-100 text-blue-800 border-blue-300': orderNote === 'Meja 02'}">Meja 02</button>
+                            <button type="button" @click="orderNote = 'Meja 03'" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700" :class="{'bg-blue-100 text-blue-800 border-blue-300': orderNote === 'Meja 03'}">Meja 03</button>
+                            <button type="button" @click="orderNote = 'Meja 04'" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700" :class="{'bg-blue-100 text-blue-800 border-blue-300': orderNote === 'Meja 04'}">Meja 04</button>
+                            <button type="button" @click="orderNote = 'Area Bar'" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700" :class="{'bg-blue-100 text-blue-800 border-blue-300': orderNote === 'Area Bar'}">Bar</button>
+                            <button type="button" @click="orderNote = ''" x-show="orderNote" class="text-[10px] font-bold px-1.5 py-0.5 rounded-md text-rose-500 hover:bg-rose-50">✕ Reset</button>
+                        </div>
+                    </template>
+
                     <input type="text"
                            x-model="orderNote"
-                           placeholder="Contoh: Meja 04 / Tolong packing terpisah..."
+                           :placeholder="orderType === 'dine_in' ? 'Ketik nomor meja atau pilih tombol di atas (opsional)...' : 'Contoh: Bungkus terpisah (opsional, boleh dikosongkan)...'"
                            class="w-full text-xs font-medium py-1.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500">
                 </div>
 
@@ -935,28 +1073,52 @@
                         </div>
                     </div>
 
-                    <!-- Tombol Uang Cepat (Quick Cash Buttons) -->
-                    <div class="grid grid-cols-4 gap-1.5">
-                        <button type="button"
-                                @click="setExactAmount()"
-                                class="px-2 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/60 hover:text-blue-700 dark:hover:text-blue-300 text-[11px] font-extrabold text-slate-700 dark:text-slate-300 transition">
-                            Uang Pas
-                        </button>
-                        <button type="button"
-                                @click="addCash(20000)"
-                                class="px-2 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/60 hover:text-blue-700 dark:hover:text-blue-300 text-[11px] font-extrabold text-slate-700 dark:text-slate-300 transition">
-                            +20k
-                        </button>
-                        <button type="button"
-                                @click="addCash(50000)"
-                                class="px-2 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/60 hover:text-blue-700 dark:hover:text-blue-300 text-[11px] font-extrabold text-slate-700 dark:text-slate-300 transition">
-                            +50k
-                        </button>
-                        <button type="button"
-                                @click="addCash(100000)"
-                                class="px-2 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/60 hover:text-blue-700 dark:hover:text-blue-300 text-[11px] font-extrabold text-slate-700 dark:text-slate-300 transition">
-                            +100k
-                        </button>
+                    <!-- Tombol Uang Cepat (Fast Cash & Pecahan Populer) -->
+                    <div class="space-y-1.5">
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button type="button"
+                                    @click="setExactAmount()"
+                                    class="px-2 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-black transition">
+                                Uang Pas
+                            </button>
+                            <button type="button"
+                                    @click="setCash(50000)"
+                                    class="px-2 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-black transition">
+                                50.000
+                            </button>
+                            <button type="button"
+                                    @click="setCash(100000)"
+                                    class="px-2 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-black transition">
+                                100.000
+                            </button>
+                            <button type="button"
+                                    @click="paidAmount = 0"
+                                    class="px-2 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 text-[11px] font-bold transition">
+                                Reset (0)
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button type="button"
+                                    @click="addCash(10000)"
+                                    class="px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                +10k
+                            </button>
+                            <button type="button"
+                                    @click="addCash(20000)"
+                                    class="px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                +20k
+                            </button>
+                            <button type="button"
+                                    @click="addCash(50000)"
+                                    class="px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                +50k
+                            </button>
+                            <button type="button"
+                                    @click="addCash(100000)"
+                                    class="px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                +100k
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Status Kembalian / Kurang -->
@@ -1363,6 +1525,200 @@
             </div>
         </div>
     </div>
+
+    {{-- =========================================================================
+         MODAL BUKA SHIFT KASIR (Input Modal Kas Awal)
+         ========================================================================= --}}
+    <div x-show="showOpenShiftModal"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+         style="display: none;">
+        
+        <div @click.away="showOpenShiftModal = false"
+             class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 space-y-4">
+            
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center text-xl shrink-0 font-black">
+                    🔓
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white">Buka Shift Kasir Baru</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Masukkan modal kas awal (uang receh/kembalian di laci kasir).</p>
+                </div>
+            </div>
+
+            <form action="{{ route('cashier-shifts.open') }}" method="POST" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Modal Kas Awal (Rp) <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-xs font-extrabold text-slate-400">Rp</span>
+                        <input type="number"
+                               name="starting_cash"
+                               min="0"
+                               step="1000"
+                               x-model.number="shiftStartingCash"
+                               required
+                               placeholder="200000"
+                               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-black text-slate-900 dark:text-white focus:border-amber-500 focus:ring-amber-500">
+                    </div>
+                    
+                    <!-- Tombol Cepat Pecahan Modal Awal -->
+                    <div class="grid grid-cols-3 gap-1.5 mt-2">
+                        <button type="button" @click="shiftStartingCash = 100000" class="py-1 px-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 text-[11px] font-bold text-slate-700 dark:text-slate-300">Rp 100.000</button>
+                        <button type="button" @click="shiftStartingCash = 200000" class="py-1 px-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 text-[11px] font-bold text-slate-700 dark:text-slate-300">Rp 200.000</button>
+                        <button type="button" @click="shiftStartingCash = 500000" class="py-1 px-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 text-[11px] font-bold text-slate-700 dark:text-slate-300">Rp 500.000</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Catatan Shift (Opsional)
+                    </label>
+                    <input type="text"
+                           name="notes"
+                           placeholder="Contoh: Shift Pagi Barista (07:00 - 15:00)"
+                           class="w-full text-xs font-medium py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button"
+                            @click="showOpenShiftModal = false"
+                            class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        Batal
+                    </button>
+                    <button type="submit"
+                            class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-black shadow-md shadow-amber-500/20">
+                        Buka Shift Sekarang
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- =========================================================================
+         MODAL TUTUP SHIFT KASIR (Rekonsiliasi Kas Laci & Cetak Z-Report)
+         ========================================================================= --}}
+    @if($activeShift)
+    <div x-show="showCloseShiftModal"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+         style="display: none;">
+        
+        <div @click.away="showCloseShiftModal = false"
+             class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-4">
+            
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 flex items-center justify-center text-xl shrink-0 font-black">
+                    🔒
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white">Tutup Shift Kasir (Z-Report)</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Rekonsiliasi uang kas fisik di laci kasir sebelum serah terima shift.</p>
+                </div>
+            </div>
+
+            <!-- Ringkasan Shift Aktif -->
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Jam Buka Shift:</span>
+                    <strong class="text-slate-800 dark:text-white">{{ $activeShift->opened_at->format('d M Y, H:i') }}</strong>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Modal Kas Awal:</span>
+                    <span class="font-bold text-slate-800 dark:text-white">Rp {{ number_format($activeShift->starting_cash, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">(+) Penjualan Kas (Tunai):</span>
+                    <span class="font-bold text-emerald-600 dark:text-emerald-400">Rp {{ number_format($activeShiftSummary['cash_sales'] ?? 0, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">(+) Penjualan Non-Tunai (QRIS/Transfer):</span>
+                    <span class="font-bold text-blue-600 dark:text-blue-400">Rp {{ number_format($activeShiftSummary['non_cash_sales'] ?? 0, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Total Transaksi:</span>
+                    <span class="font-black text-slate-900 dark:text-white">{{ $activeShiftSummary['transactions_count'] ?? 0 }} Struk</span>
+                </div>
+                <div class="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between font-black text-sm">
+                    <span class="text-slate-700 dark:text-slate-300">Uang Kas Sistem (Expected):</span>
+                    <span class="text-blue-600 dark:text-blue-400">Rp {{ number_format($activeShiftSummary['expected_cash'] ?? 0, 0, ',', '.') }}</span>
+                </div>
+            </div>
+
+            <form action="{{ route('cashier-shifts.close', $activeShift->id) }}" method="POST" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Hitungan Uang Kas Fisik di Laci (Actual Cash) <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-xs font-extrabold text-slate-400">Rp</span>
+                        <input type="number"
+                               name="actual_cash"
+                               min="0"
+                               step="500"
+                               x-model.number="shiftActualCash"
+                               required
+                               placeholder="Hitung uang tunai di laci..."
+                               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-black text-slate-900 dark:text-white focus:border-rose-500 focus:ring-rose-500">
+                    </div>
+
+                    <!-- Live Selisih Status -->
+                    <div class="mt-2 p-2.5 rounded-xl text-xs flex items-center justify-between font-bold"
+                         :class="{
+                             'bg-emerald-50 text-emerald-800 border border-emerald-200': shiftActualCash == {{ (float)($activeShiftSummary['expected_cash'] ?? 0) }},
+                             'bg-rose-50 text-rose-800 border border-rose-200': shiftActualCash < {{ (float)($activeShiftSummary['expected_cash'] ?? 0) }},
+                             'bg-blue-50 text-blue-800 border border-blue-200': shiftActualCash > {{ (float)($activeShiftSummary['expected_cash'] ?? 0) }}
+                         }">
+                        <span>Estimasi Selisih:</span>
+                        <span class="font-black"
+                              x-text="shiftActualCash == {{ (float)($activeShiftSummary['expected_cash'] ?? 0) }}
+                                      ? '✓ PAS (SEIMBANG)'
+                                      : (shiftActualCash > {{ (float)($activeShiftSummary['expected_cash'] ?? 0) }}
+                                          ? '+ LEBIH Rp ' + formatRupiah(shiftActualCash - {{ (float)($activeShiftSummary['expected_cash'] ?? 0) }})
+                                          : '- KURANG Rp ' + formatRupiah({{ (float)($activeShiftSummary['expected_cash'] ?? 0) }} - shiftActualCash))">
+                        </span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Catatan Penutupan Shift (Opsional)
+                    </label>
+                    <textarea name="notes"
+                              rows="2"
+                              placeholder="Keterangan kondisi kasir, serah terima shift..."
+                              class="w-full text-xs font-medium py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button"
+                            @click="showCloseShiftModal = false"
+                            class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        Batal
+                    </button>
+                    <button type="submit"
+                            class="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white text-xs font-black shadow-md shadow-rose-600/20">
+                        Tutup Shift & Cetak Z-Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
 
 </div>
 

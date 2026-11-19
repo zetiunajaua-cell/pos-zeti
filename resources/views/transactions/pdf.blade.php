@@ -184,6 +184,12 @@
         <div class="order-type-badge">
             {{ ($transaction->order_type ?? 'dine_in') === 'take_away' ? 'TAKE AWAY (BAWA PULANG)' : 'DINE IN (MAKAN DI TEMPAT)' }}
         </div>
+
+        <!-- NOMOR ANTREAN PESANAN KAFE -->
+        <div style="margin-top: 4px; padding: 3px 0; border: 1px dashed #0f172a; text-align: center;">
+            <div style="font-size: 7px; font-weight: bold; text-transform: uppercase;">Nomor Antrean Pesanan</div>
+            <div style="font-size: 14px; font-weight: bold; letter-spacing: 1px;">{{ $transaction->formatted_queue_number }}</div>
+        </div>
     </div>
 
     <!-- BANNER STATUS JIKA VOID / REFUND (Task 17 & 22) -->
